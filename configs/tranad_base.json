@@ -9,7 +9,7 @@
     },
     "model" : {
         "name" : "TranAD",
-        "n_window" : 10,
+        "n_window" : 20,
         "latent_dim" : 16,
         "d_model_factor" : 1,
         "nhead_factor": 1,
