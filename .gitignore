@@ -1,13 +1,9 @@
 cat > .gitignore <<'EOF'
 # data / results / logs
 data/
-results/
-logs/
-checkpoints/
 processed/
 *.pt
 *.pth
-*.ckpt
 
 # python
 __pycache__/
