@@ -10,6 +10,7 @@ import numpy as np
 import json
 import random
 from scoring.score import *
+from pathlib import Path
 
 # Added
 from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score
@@ -89,18 +90,25 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, cfg, training=True
             reduce_mode = cfg["scoring"]["reduce"]
             k_ratio = cfg["scoring"]["k_ratio"]
             car_p = cfg["scoring"]["car_positive_ratio"]
+            print("Get Threshold & Train data score:")
             threshold, train_scores = fit_threshold(
-                model, trainO, cfg = cfg, reduce=reduce_mode, q=q
+                model, trainO, cfg=cfg, reduce=reduce_mode, q=q
             )
 
             # Changed mainly
+            print("Calculate Test Scores : ")
             car_scores = {}
-            for cid, arr in data.items():
+            for cid, arr in tqdm(data.items()):
                 scores = []
                 arr = torch.as_tensor(arr[:, :, :])
                 for i in range(arr.shape[0]):
                     score = snippet_score(
-                        model, arr[i], cfg = cfg, reduce=reduce_mode, k_ratio=k_ratio, p=car_p
+                        model,
+                        arr[i],
+                        cfg=cfg,
+                        reduce=reduce_mode,
+                        k_ratio=k_ratio,
+                        p=car_p,
                     )
                     scores.append(score)
                 car_scores[cid] = scores
@@ -138,7 +146,7 @@ if __name__ == "__main__":
     cfg["model"]["name"] = args.model
 
     train_loader, test_loader, labels, train_dict, train_labels = load_dataset(
-        cfg["data"]["output_folder"] + args.dataset
+        cfg["data"]["output_folder"] + args.dataset, args.test
     )
     # Batch Size = Entire Time Series Data (L) 전체 데이터를 받아온다.
 
@@ -155,6 +163,7 @@ if __name__ == "__main__":
     model, optimizer, scheduler, epoch, accuracy_list = load_model(
         cfg["model"]["name"],
         trainO.shape[-1],
+        args,
         cfg=cfg,  # modified # labels.shape[1]  # labels.shape[1] = dimensions
     )  # epoch = -1 , model 없는 경우
 
@@ -181,7 +190,7 @@ if __name__ == "__main__":
             + color.ENDC
         )
 
-        save_model(model, optimizer, scheduler, e, accuracy_list, cfg=cfg)
+        save_model(model, optimizer, scheduler, e, accuracy_list, args, cfg=cfg)
         # plot_accuracies(accuracy_list, f"{args.model}_{args.dataset}")
 
     ### Testing phase
@@ -203,9 +212,15 @@ if __name__ == "__main__":
         )
 
     print("Save Score Files")
-   # np.save(f"./results/test_scores_{cfg['model']['n_window']}_{cfg['model']['d_model_factor']}.npy", scores, allow_pickle=True)
-    np.save(f"./results/val_scores_window{cfg['model']['n_window']}_dimff{cfg['model']['dim_feedforward']}.npy", scores, allow_pickle=True)
-    np.save(f"./results/train_scores_window{cfg['model']['n_window']}_dimff{cfg['model']['dim_feedforward']}.npy", train_scores, allow_pickle=True)
+    config_path = Path(args.config)
+    run_id = config_path.stem  # final path
+
+    out_dir = Path("./results") / run_id
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    prefix = "test" if args.test else "val"
+    np.save(out_dir / f"{prefix}_scores.npy", scores, allow_pickle=True)
+    np.save(out_dir / "train_scores.npy", train_scores, allow_pickle=True)
 
     # AUROC scoring
     print("AUROC Scoring by using DyAD method")
@@ -260,7 +275,7 @@ if __name__ == "__main__":
         print("threshold_n", threshold_n)
         print("start tuning, flag is", "rec_error")
         best_result, best_h, best_re, best_fa, best_f1, best_auroc = find_best_result(
-            threshold_n, result, dataframe,ind_car_num_list,ood_car_num_list
+            threshold_n, result, dataframe, ind_car_num_list, ood_car_num_list
         )
         if dataframe.shape[0] != best_result.shape[0]:
             print(

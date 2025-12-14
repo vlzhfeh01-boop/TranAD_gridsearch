@@ -5,6 +5,9 @@ import torch
 from torch.utils.data import Dataset, DataLoader, TensorDataset
 import numpy as np
 import datetime
+from tqdm import tqdm
+from pathlib import Path
+
 
 class color:
     HEADER = "\033[95m"
@@ -91,11 +94,11 @@ def snippet_score(
 
 
 def fit_threshold(
-    model, normal_snippets,cfg, L=10, device="cuda", reduce="topk", q=90, p=95
+    model, normal_snippets, cfg, L=10, device="cuda", reduce="topk", q=90, p=95
 ):
     scores = [
-        snippet_score(model, s, cfg=cfg,L=L, device=device, reduce=reduce, p=p)
-        for s in normal_snippets
+        snippet_score(model, s, cfg=cfg, L=L, device=device, reduce=reduce, p=p)
+        for s in tqdm(normal_snippets)
     ]
     thr = float(np.percentile(scores, q))
     return thr, np.array(scores)
@@ -113,13 +116,13 @@ def convert_to_windows_mod(data, cfg, model="TranAD"):
                 w = X[i - w_size : i]
             else:
                 w = torch.cat([X[0].repeat(w_size - i, 1), X[0:i]])
-            window.append(w if "TranAD" in cfg['model']['name'] else w.view(-1))
+            window.append(w if "TranAD" in cfg["model"]["name"] else w.view(-1))
         window_tensor = torch.stack(window, dim=0)
         windows.append(window_tensor)
     return torch.stack(windows, dim=0)
 
 
-def load_model(modelname, dims, cfg):
+def load_model(modelname, dims, args, cfg):
     import src2.models
 
     model_class = getattr(src2.models, modelname)
@@ -164,8 +167,12 @@ def load_model(modelname, dims, cfg):
     else:
         raise ValueError(f"Unsupported scheduler type: {sch_type}")
 
-    fname = f"checkpoints/{cfg['model']['name']}_{cfg['data']['dataset']}/model.ckpt"
-    if os.path.exists(fname) :
+    config_path = Path(args.config)
+    run_id = config_path.stem
+    folder = Path("./checkpoints") / run_id
+    fname = f"{folder}/model.ckpt"
+
+    if os.path.exists(fname):
         print(f"{color.GREEN}Loading pre-trained model: {model.name}{color.ENDC}")
         checkpoint = torch.load(fname)
         model.load_state_dict(checkpoint["model_state_dict"])
@@ -180,10 +187,13 @@ def load_model(modelname, dims, cfg):
     return model, optimizer, scheduler, epoch, accuracy_list
 
 
-def save_model(model, optimizer, scheduler, epoch, accuracy_list, cfg):
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    folder = f"checkpoints/{cfg['model']['name']}_{cfg['data']['dataset']}_window{cfg['model']['n_window']}_dim{cfg['model']['d_model_factor']}_{timestamp}/"
-    os.makedirs(folder, exist_ok=True)
+def save_model(model, optimizer, scheduler, epoch, accuracy_list, args):
+    config_path = Path(args.config)
+    run_id = config_path.stem
+
+    folder = Path("./checkpoints") / run_id
+    folder.mkdir(parents=True, exist_ok=True)
+
     file_path = f"{folder}/model.ckpt"
     torch.save(
         {
@@ -197,23 +207,28 @@ def save_model(model, optimizer, scheduler, epoch, accuracy_list, cfg):
     )
 
 
-def load_dataset(dataset):
+def load_dataset(dataset, test=False):
     folder = os.path.join(dataset)
     if not os.path.exists(folder):
         raise Exception("Processed Data not found.")
     loader = []
-    for file in ["train", "test", "labels","train_labels"]:
+    for file in ["train", "test", "labels", "val", "val_labels", "train_labels"]:
         loader.append(np.load(os.path.join(folder, f"{file}.npy"), allow_pickle=True))
     # loader = [i[:, debug:debug+1] for i in loader]
 
     train_loader = DataLoader(loader[0][:, :, :], batch_size=loader[0].shape[0])
+    # test가 True이면, test data를 받아온다.
+    if test:
+        test_loader = loader[1].item()
+        labels = loader[2].item()
+    else:
+        test_loader = loader[3].item()
+        labels = loader[4].item()
 
-    test_loader = loader[1].item()
     train_data_dict = np.load(
         os.path.join(folder, "train_dict.npy"), allow_pickle=True
     ).item()
 
-    labels = loader[2].item()
-    train_labels = loader[3].item()
+    train_labels = loader[5].item()
     # 전체 데이터를 데이터로터 타입으로 변환
     return train_loader, test_loader, labels, train_data_dict, train_labels
