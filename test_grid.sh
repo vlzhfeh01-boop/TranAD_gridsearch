@@ -23,34 +23,17 @@ for w in "${WINDOW_LIST[@]}"; do
     log_out="${RESULTS_DIR}/tranad_w${w}_fl${ld}.log"
 
     echo "==============================================="
-    echo "Running: n_window=${w}, d_model_factor=${ld}"
+    echo "Test: n_window=${w}, d_model_factor=${ld}"
     echo "Config: $cfg_out"
     echo "Log   : $log_out"
     echo "==============================================="
 
-    # 1) base config를 읽어서 n_window, latent_dim, num_epochs 수정 후 새 config로 저장
-    python3 - <<EOF
-import json
-
-base_path = "${BASE_CONFIG}"
-out_path  = "${cfg_out}"
-
-with open(base_path, "r") as f:
-    cfg = json.load(f)
-
-cfg["model"]["n_window"] = ${w}
-cfg["model"]["d_model_factor"] = ${ld}
-cfg["training"]["num_epochs"] = ${NUM_EPOCHS}
-
-with open(out_path, "w") as f:
-    json.dump(cfg, f, indent=4)
-EOF
 
     # 2) main.py 실행 (VAL_AUROC를 로그에 찍게 되어 있어야 함)
     python3 main.py \
         --config "$cfg_out" \
         --dataset "$DATASET" \
-	--test
+	      --test
         --model "$MODEL" 2>&1 | tee "$log_out" \
 
     # 3) 로그에서 VAL_AUROC=... 라인 파싱

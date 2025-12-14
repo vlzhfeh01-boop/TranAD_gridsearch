@@ -190,7 +190,7 @@ if __name__ == "__main__":
             + color.ENDC
         )
 
-        save_model(model, optimizer, scheduler, e, accuracy_list, args, cfg=cfg)
+        save_model(model, optimizer, scheduler, e, accuracy_list, args)
         # plot_accuracies(accuracy_list, f"{args.model}_{args.dataset}")
 
     ### Testing phase
