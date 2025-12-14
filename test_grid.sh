@@ -5,25 +5,26 @@ BASE_CONFIG="./configs/tranad_base.json"   # 템플릿 config
 RESULTS_DIR="./results/gridsearch"        # 로그/결과 저장 폴더
 DATASET="BAT"                  # --dataset 인자
 MODEL="TranAD"                            # --model 인자
-NUM_EPOCHS=5                              # 고정 epoch
+NUM_EPOCHS=10                              # 고정 epoch
 
 # 튜닝할 값들
-WINDOW_LIST=(15)
+WINDOW_LIST=(20)
 
-HIDDEN_LIST=(16 32 64)
+FF_LIST=(16 32 64)
 
 mkdir -p "$RESULTS_DIR"
 
 RESULT_CSV="$RESULTS_DIR/test_auroc_summary.csv"
-echo "model,n_window,d_model_factor,val_auroc,log_path,config_path" > "$RESULT_CSV"
+echo "model,n_window,dim_feedforward,val_auroc,log_path,config_path" > "$RESULT_CSV"
 
 for w in "${WINDOW_LIST[@]}"; do
-  for ld in "${FACTOR_LIST[@]}"; do
+  for ld in "${FF_LIST[@]}"; do
     cfg_out="./configs/tranad_w${w}_fl${ld}.json"
     log_out="${RESULTS_DIR}/tranad_w${w}_fl${ld}.log"
 
     echo "==============================================="
     echo "Test: n_window=${w}, d_model_factor=${ld}"
+    echo "Epochs: $NUM_EPOCHS"
     echo "Config: $cfg_out"
     echo "Log   : $log_out"
     echo "==============================================="

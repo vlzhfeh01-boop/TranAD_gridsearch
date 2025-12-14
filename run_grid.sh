@@ -5,10 +5,10 @@ BASE_CONFIG="./configs/tranad_base.json"   # 템플릿 config
 RESULTS_DIR="./results/gridsearch"        # 로그/결과 저장 폴더
 DATASET="BAT"                  # --dataset 인자
 MODEL="TranAD"                            # --model 인자
-NUM_EPOCHS=5                              # 고정 epoch
+NUM_EPOCHS=10                              # 고정 epoch
 
 # 튜닝할 값들
-WINDOW_LIST=(15)
+WINDOW_LIST=(20)
 FF_LIST=(16 32 64)
 
 mkdir -p "$RESULTS_DIR"
@@ -23,6 +23,7 @@ for w in "${WINDOW_LIST[@]}"; do
 
     echo "==============================================="
     echo "Running: n_window=${w}, dimff=${ld}"
+    echo "Epochs: $NUM_EPOCHS"
     echo "Config: $cfg_out"
     echo "Log   : $log_out"
     echo "==============================================="
