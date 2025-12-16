@@ -14,7 +14,7 @@ lr_LIST=(3e-4 3e-3)
 mkdir -p "$RESULTS_DIR"
 
 RESULT_CSV="$RESULTS_DIR/val_auroc_summary.csv"
-echo "model,n_window,learning_rate,val_auroc,log_path,config_path" > "$RESULT_CSV"
+echo "model,n_window,learning_rate,val_auroc,log_path,config_path" >> "$RESULT_CSV"
 
 for w in "${WINDOW_LIST[@]}"; do
   for ld in "${lr_LIST[@]}"; do

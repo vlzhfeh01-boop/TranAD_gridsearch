@@ -19,7 +19,7 @@
         "num_decoder_layers": 1
     },
     "training": {
-        "num_epochs": 5,
+        "num_epochs": 10,
         "batch_size": 32,
         "loss_type": "smoothl1",
         "optimizer": {

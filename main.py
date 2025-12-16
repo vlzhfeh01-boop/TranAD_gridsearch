@@ -171,7 +171,7 @@ if __name__ == "__main__":
     if not args.test:
         print(f"{color.HEADER}Training {args.model} on {args.dataset}{color.ENDC}")
         num_epochs = cfg["training"]["num_epochs"]
-
+        
         s = trainD
         start = time()
         for e in tqdm(list(range(epoch + 1, epoch + num_epochs + 1))):

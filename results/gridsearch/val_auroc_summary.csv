@@ -1,0 +1,4 @@
+model,n_window,learning_rate,val_auroc,log_path,config_path
+TranAD,20,3e-4,0.916682,./results/gridsearch/tranad_w20_lr3e-4.log,./configs/tranad_w20_lr3e-4.json
+TranAD,20,3e-3,0.890180,./results/gridsearch/tranad_w20_lr3e-3.log,./configs/tranad_w20_lr3e-3.json
+model,n_window,dim_ff,val_auroc,log_path,config_path
