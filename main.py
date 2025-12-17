@@ -21,9 +21,9 @@ import matplotlib.pyplot as plt
 def backprop(epoch, model, data, dataO, optimizer, scheduler, cfg, training=True):
     feats = dataO.shape[1]
     # Added
-    # TrinD Shape = (N,128,10,8)
+    # TranAD Shape = (N,128,10,8)
     if "TranAD" in model.name:
-        w_size = model.n_window
+        w_size = cfg["model"]["n_window"]
         # mse = nn.MSELoss(reduction="none")
         n = epoch + 1
         if training:
@@ -35,10 +35,7 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, cfg, training=True
             batch_size = cfg["training"]["batch_size"]
             loss_type = cfg["training"]["loss_type"]
             dataloader = DataLoader(data_x, shuffle=True, batch_size=batch_size)
-
-            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-            model = model.to(device)
-
+            count = 0
             for batch in tqdm(dataloader):
                 optimizer.zero_grad()
                 batch = batch.to(device, non_blocking=True)
@@ -47,41 +44,41 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, cfg, training=True
 
                 B, N_win, L, F = (
                     batch.shape
-                )  # Batch size, Number of window, snippet length, Feature
-                batch_loss = 0.0  # 배치 평균 누적용
+                )  # Batch size, Number of window, window length, Feature
 
-                for b in range(B):
-                    snippet = batch[b]  # (128,10,8)
-                    src = snippet.permute(1, 0, 2).to(device)  # (10,128,8)
+                if count == 0:
+                    print("batch.shape:", batch.shape, " w_size:", w_size)
+                    count += 1
 
-                    tgt = src[-1, :, :].unsqueeze(0)
-                    # forward per one snippet
+                src = (
+                    batch.permute(2, 0, 1, 3).contiguous().view(w_size, -1, F)
+                )  # (10,128,8)
 
-                    out = model(src, tgt)  # return (x1,x2) or tensor
+                tgt = src[-1, :, :].unsqueeze(0)
+                # forward per one snippet
 
-                    # loss 설정
-                    if isinstance(out, tuple):
-                        x1, x2 = out
+                out = model(src, tgt)  # return (x1,x2) or tensor
 
-                        assert x1.shape == tgt.shape and x2.shape == tgt.shape
+                # loss 설정
+                if isinstance(out, tuple):
+                    x1, x2 = out
 
-                        # loss1 = mse(x1, tgt).mean()
-                        # loss2 = mse(x2, tgt).mean()
-                        loss1 = reconstruction_loss(x1, tgt, loss_type=loss_type).mean()
-                        loss2 = reconstruction_loss(x2, tgt, loss_type=loss_type).mean()
-                        loss = (1 / n) * loss1 + (1 - 1 / n) * loss2
-                    else:
-                        x_pred = out
-                        loss = reconstruction_loss(
-                            x_pred, tgt, loss_type=loss_type
-                        ).mean()
+                    assert x1.shape == tgt.shape and x2.shape == tgt.shape
+
+                    # loss1 = mse(x1, tgt).mean()
+                    # loss2 = mse(x2, tgt).mean()
+                    loss1 = reconstruction_loss(x1, tgt, loss_type=loss_type).mean()
+                    loss2 = reconstruction_loss(x2, tgt, loss_type=loss_type).mean()
+                    loss = (1 / n) * loss1 + (1 - 1 / n) * loss2
+                else:
+                    x_pred = out
+                    loss = reconstruction_loss(x_pred, tgt, loss_type=loss_type).mean()
 
                     # backward
-                    (loss / B).backward()
-                    batch_loss += loss.item()
+                loss.backward()
                 optimizer.step()
 
-                total_loss += batch_loss / B
+                total_loss += loss.item()
                 count += 1
 
             scheduler.step()
@@ -170,6 +167,8 @@ if __name__ == "__main__":
         args,
         cfg=cfg,  # modified # labels.shape[1]  # labels.shape[1] = dimensions
     )  # epoch = -1 , model 없는 경우
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = model.to(device).float()
 
     ### Training phase
     if not args.test:
