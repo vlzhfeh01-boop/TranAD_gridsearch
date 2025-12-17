@@ -8,8 +8,8 @@ MODEL="TranAD"                            # --model 인자
 NUM_EPOCHS=5                              # 고정 epoch
 
 # 튜닝할 값들
-WINDOW_LIST=(20)
-lr_LIST=(3e-4 3e-3)
+WINDOW_LIST=(15 20)
+lr_LIST=(1e-4 3e-4 1e-3)
 
 mkdir -p "$RESULTS_DIR"
 
@@ -53,7 +53,7 @@ EOF
         --model "$MODEL" 2>&1 | tee "$log_out"
 
     # 3) 로그에서 VAL_AUROC=... 라인 파싱
-    val_auroc=$(grep "VAL_AUROC" "$log_out" | tail -n 1 | awk -F'=' '{print $2}')
+    val_auroc=$(grep "AUROC" "$log_out" | tail -n 1 | awk -F'=' '{print $2}')
 
     if [ -z "$val_auroc" ]; then
       val_auroc="NaN"

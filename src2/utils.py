@@ -212,23 +212,20 @@ def load_dataset(dataset, test=False):
     if not os.path.exists(folder):
         raise Exception("Processed Data not found.")
     loader = []
-    for file in ["train", "test", "labels", "val", "val_labels", "train_labels"]:
+    for file in ["train", "test", "labels", "train_labels"]:
         loader.append(np.load(os.path.join(folder, f"{file}.npy"), allow_pickle=True))
     # loader = [i[:, debug:debug+1] for i in loader]
 
     train_loader = DataLoader(loader[0][:, :, :], batch_size=loader[0].shape[0])
+
     # test가 True이면, test data를 받아온다.
-    if test:
-        test_loader = loader[1].item()
-        labels = loader[2].item()
-    else:
-        test_loader = loader[3].item()
-        labels = loader[4].item()
+    test_loader = loader[1].item()
+    labels = loader[2].item()
 
     train_data_dict = np.load(
         os.path.join(folder, "train_dict.npy"), allow_pickle=True
     ).item()
 
-    train_labels = loader[5].item()
+    train_labels = loader[3].item()
     # 전체 데이터를 데이터로터 타입으로 변환
     return train_loader, test_loader, labels, train_data_dict, train_labels

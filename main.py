@@ -30,14 +30,18 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, cfg, training=True
             model.train()
             total_loss = 0.0
             count = 0
-            data_x = torch.as_tensor(data, dtype=torch.double)
+            data_x = torch.as_tensor(data, dtype=torch.float32)
 
             batch_size = cfg["training"]["batch_size"]
             loss_type = cfg["training"]["loss_type"]
             dataloader = DataLoader(data_x, shuffle=True, batch_size=batch_size)
 
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            model = model.to(device)
+
             for batch in tqdm(dataloader):
                 optimizer.zero_grad()
+                batch = batch.to(device, non_blocking=True)
 
                 batch = convert_to_windows_mod(batch, cfg, model)
 
@@ -48,7 +52,7 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, cfg, training=True
 
                 for b in range(B):
                     snippet = batch[b]  # (128,10,8)
-                    src = snippet.permute(1, 0, 2)  # (10,128,8)
+                    src = snippet.permute(1, 0, 2).to(device)  # (10,128,8)
 
                     tgt = src[-1, :, :].unsqueeze(0)
                     # forward per one snippet
@@ -171,7 +175,7 @@ if __name__ == "__main__":
     if not args.test:
         print(f"{color.HEADER}Training {args.model} on {args.dataset}{color.ENDC}")
         num_epochs = cfg["training"]["num_epochs"]
-        
+
         s = trainD
         start = time()
         for e in tqdm(list(range(epoch + 1, epoch + num_epochs + 1))):
@@ -218,7 +222,7 @@ if __name__ == "__main__":
     out_dir = Path("./results") / run_id
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    prefix = "test" if args.test else "val"
+    prefix = "test"
     np.save(out_dir / f"{prefix}_scores.npy", scores, allow_pickle=True)
     np.save(out_dir / "train_scores.npy", train_scores, allow_pickle=True)
 
@@ -328,4 +332,4 @@ if __name__ == "__main__":
     print("Fold AUCs:", AUC_fivefold_list)
     mean_auc = np.mean(AUC_fivefold_list)
     print("AUC mean ", mean_auc)
-    print(f"VAL_AUROC={mean_auc:.6f}")
+    print(f"AUROC={mean_auc:.6f}")

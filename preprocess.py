@@ -39,63 +39,54 @@ print("abnormal car 수 :", len(abnormal_ids))
 # random seed (0)
 random.seed(0)
 
-
-# train / val / test split
-# normal : 10 % test, 나머지 중 20% val
-# abnormal : 30% val, 70% test
+# train / test split
+# normal : 10 % test, 나머지 train
+# abnormal : all test
 
 # normal split
 k_test_normal = int(len(normal_ids) * 0.1)
 test_normal_ids = set(random.sample(normal_ids, k_test_normal))
 
-remaining_normal = [cid for cid in normal_ids if cid not in test_normal_ids]
-random.shuffle(remaining_normal)
+train_normal_ids = [cid for cid in normal_ids if cid not in test_normal_ids]
+# random.shuffle(remaining_normal)
 
-k_val_normal = int(len(remaining_normal) * 0.2)
-val_normal_ids = set(remaining_normal[:k_val_normal])
-train_normal_ids = set(remaining_normal[k_val_normal:])
+# k_val_normal = int(len(remaining_normal) * 0.2)
+# val_normal_ids = set(remaining_normal[:k_val_normal])
+# train_normal_ids = set(remaining_normal[k_val_normal:])
 
 # abnormal split
-random.shuffle(abnormal_ids)
-k_val_abnormal = max(1, int(len(abnormal_ids)*0.3))
-val_abnormal_ids = set(abnormal_ids[:k_val_abnormal])
-test_abnormal_ids = set(abnormal_ids[k_val_abnormal:])
+# random.shuffle(abnormal_ids)
+# k_val_abnormal = max(1, int(len(abnormal_ids)*0.3))
+# val_abnormal_ids = set(abnormal_ids[:k_val_abnormal])
+# test_abnormal_ids = set(abnormal_ids[k_val_abnormal:])
 
 # id collection
 train_ids = train_normal_ids
-val_ids = val_normal_ids | val_abnormal_ids
-test_ids = test_normal_ids | test_abnormal_ids
+# val_ids = val_normal_ids | val_abnormal_ids
+test_ids = test_normal_ids | abnormal_ids
 
-assert len(train_ids & val_ids) == 0
 assert len(train_ids & test_ids) == 0
-assert len(val_ids & test_ids) == 0
 
 print("=== Split 결과 (car 기준) ===")
-print("Train normal:", len(train_normal_ids), "abnormal: 0")
-print("Val   normal:", len(val_normal_ids), "abnormal:", len(val_abnormal_ids))
-print("Test  normal:", len(test_normal_ids), "abnormal:", len(test_abnormal_ids))
+print("Train normal:", len(train_ids), "abnormal: 0")
+# print("Val   normal:", len(val_normal_ids), "abnormal:", len(val_abnormal_ids))
+print("Test  normal:", len(test_normal_ids), "abnormal:", len(abnormal_ids))
 
 
 train_data = {cid: car_data[cid] for cid in train_ids}
 train_labels = {cid: labels[cid] for cid in train_ids}
 
 
-val_data = {cid: car_data[cid] for cid in val_ids}
-val_labels = {cid: labels[cid] for cid in val_ids}
-
-
 test_data = {cid: car_data[cid] for cid in test_ids}
 test_labels = {cid: labels[cid] for cid in test_ids}
 
 print("Train label 분포:", Counter(train_labels.values()))
-print("Val   label 분포:", Counter(val_labels.values()))
 print("Test  label 분포:", Counter(test_labels.values()))
 
 
 # 1. train_data 기준으로 normalize feature min/max 계산
 min_vals, max_vals = compute_min_max(train_data)
 train_data_norm = minmax_normalize_dict(train_data, min_vals, max_vals)
-val_data_norm = minmax_normalize_dict(val_data, min_vals, max_vals)
 test_data_norm = minmax_normalize_dict(test_data, min_vals, max_vals)
 
 # 2. train/test normalize (quantile min-max 방식)
@@ -143,17 +134,6 @@ np.save(
 np.save(
     f"train_labels_brand{brand[brand_num]}.npy",
     train_labels,
-    allow_pickle=True,
-)
-
-np.save(
-    f"val_brand{brand[brand_num]}.npy",
-    val_data_norm,
-    allow_pickle=True,
-)
-np.save(
-    f"val_labels_brand{brand[brand_num]}.npy",
-    val_labels,
     allow_pickle=True,
 )
 
