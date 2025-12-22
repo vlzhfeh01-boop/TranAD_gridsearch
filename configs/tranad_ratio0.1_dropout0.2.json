@@ -1,0 +1,42 @@
+{
+    "experiment": {
+        "name": "tranad",
+        "output_dir": "./results"
+    },
+    "data": {
+        "output_folder": "processed/",
+        "data_folder": "data/"
+    },
+    "model": {
+        "name": "TranAD",
+        "n_window": 20,
+        "latent_dim": 16,
+        "d_model_factor": 1,
+        "nhead_factor": 1,
+        "dim_feedforward": 8,
+        "dropout": 0.2,
+        "num_encoder_layers": 1,
+        "num_decoder_layers": 1
+    },
+    "training": {
+        "num_epochs": 5,
+        "batch_size": 32,
+        "loss_type": "smoothl1",
+        "optimizer": {
+            "type": "adamw",
+            "lr": 0.001,
+            "weight_decay": 1e-05
+        }
+    },
+    "scheduler": {
+        "type": "steplr",
+        "step_size": 5,
+        "gamma": 0.9
+    },
+    "scoring": {
+        "reduce": "topk",
+        "k_ratio": 0.1,
+        "percentile_q": 90,
+        "car_positive_ratio": 0.15
+    }
+}

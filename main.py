@@ -160,15 +160,15 @@ if __name__ == "__main__":
     print(trainO.shape)
     print(type(testO))
     print(type(labels))
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     model, optimizer, scheduler, epoch, accuracy_list = load_model(
         cfg["model"]["name"],
+        device,
         trainO.shape[-1],
         args,
         cfg=cfg,  # modified # labels.shape[1]  # labels.shape[1] = dimensions
     )  # epoch = -1 , model 없는 경우
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = model.to(device).float()
 
     ### Training phase
     if not args.test:

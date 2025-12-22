@@ -52,9 +52,15 @@ def snippet_score(
       - "topk": 상위 k% 평균
       - "percentile": 지정 분위수
     """
+    model_device = next(model.parameters()).device
+    if device is None:
+        device = model_device
+    else :
+        device = torch.device(device)
+
     loss_type = cfg["training"]["loss_type"]
 
-    s = snippet.to(torch.float64)
+    s = snippet.to(device=device, dtype=torch.float32)
     window = convert_to_windows(s, model, cfg)
     src = window.permute(1, 0, 2)
     tgt = src[-1, :, :].unsqueeze(0)
@@ -122,12 +128,12 @@ def convert_to_windows_mod(data, cfg, model="TranAD"):
     return torch.stack(windows, dim=0)
 
 
-def load_model(modelname, dims, args, cfg):
+def load_model(modelname,device, dims, args, cfg):
     import src2.models
-
+    
     model_class = getattr(src2.models, modelname)
-    model = model_class(dims, cfg).double()
-
+    model = model_class(dims, cfg).float()
+    model = model.to(device).float()
     # optimizer
     opt_cfg = cfg.get("training", {}).get("optimizer", {})
     opt_type = opt_cfg.get("type", "adamw").lower()

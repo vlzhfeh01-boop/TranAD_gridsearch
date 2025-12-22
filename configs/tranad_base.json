@@ -13,7 +13,7 @@
         "latent_dim" : 16,
         "d_model_factor" : 1,
         "nhead_factor": 1,
-        "dim_feedforward": 16,
+        "dim_feedforward": 8,
         "dropout" : 0.1,
         "num_encoder_layers": 1,
         "num_decoder_layers": 1

@@ -32,9 +32,10 @@ print("예시 car shape : ", next(iter(car_data.values())).shape)
 
 # normal / abnormal 먼저 구분
 normal_ids = [cid for cid, lab in labels.items() if lab == 0]
-abnormal_ids = [cid for cid, lab in labels.items() if lab == 1]
+abnormal_ids = set([cid for cid, lab in labels.items() if lab == 1])
 print("normal car 수 :", len(normal_ids))
 print("abnormal car 수 :", len(abnormal_ids))
+
 
 # random seed (0)
 random.seed(0)
@@ -43,11 +44,13 @@ random.seed(0)
 # normal : 10 % test, 나머지 train
 # abnormal : all test
 
+
+
 # normal split
-k_test_normal = int(len(normal_ids) * 0.1)
+k_test_normal = int(len(normal_ids) * 0.2)
 test_normal_ids = set(random.sample(normal_ids, k_test_normal))
 
-train_normal_ids = [cid for cid in normal_ids if cid not in test_normal_ids]
+train_normal_ids = set([cid for cid in normal_ids if cid not in test_normal_ids])
 # random.shuffle(remaining_normal)
 
 # k_val_normal = int(len(remaining_normal) * 0.2)
