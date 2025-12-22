@@ -21,7 +21,7 @@
     "training" : {
         "num_epochs" : 5,
         "batch_size" : 32,
-        "loss_type" : "smoothl1",
+        "loss_type" : "mse",
         "optimizer" : {
             "type" : "adamw",
             "lr" : 0.001,

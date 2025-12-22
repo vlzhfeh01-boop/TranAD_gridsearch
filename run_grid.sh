@@ -5,7 +5,7 @@ BASE_CONFIG="./configs/tranad_base.json"   # 템플릿 config
 RESULTS_DIR="./results/gridsearch"        # 로그/결과 저장 폴더
 DATASET="BAT"                  # --dataset 인자
 MODEL="TranAD"                            # --model 인자
-NUM_EPOCHS=(6 7 8)                              # 고정 epoch
+NUM_EPOCHS=(5)                              # 고정 epoch
 
 # 튜닝할 값들
 ratio_LIST=(0.05)
@@ -14,12 +14,12 @@ dropout_LIST=(0.1)
 mkdir -p "$RESULTS_DIR"
 
 RESULT_CSV="$RESULTS_DIR/val_auroc_summary.csv"
-echo "model,epochs,dropout,val_auroc,log_path,config_path" >> "$RESULT_CSV"
+echo "model,epochs,dropout,val_auroc_mse,log_path,config_path" >> "$RESULT_CSV"
 
 for w in "${NUM_EPOCHS[@]}"; do
   for ld in "${dropout_LIST[@]}"; do
-    cfg_out="./configs/tranad_epochs${w}_dropout${ld}.json"
-    log_out="${RESULTS_DIR}/tranad_epochs${w}_dropout${ld}.log"
+    cfg_out="./configs/tranad_epochs${w}_dropout${ld}_mse.json"
+    log_out="${RESULTS_DIR}/tranad_epochs${w}_dropout${ld}_mse.log"
 
     echo "==============================================="
     echo "Running: epochs=${w}, dropout=${ld}"
