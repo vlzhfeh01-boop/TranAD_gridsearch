@@ -168,6 +168,11 @@ def load_model(modelname,device, dims, args, cfg):
             step_size=step_size,
             gamma=gamma,
         )
+    elif sch_type == "cosine":
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer,
+            cfg["training"]["num_epochs"]
+        )
     elif sch_type == "none":
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=1.0)
     else:
