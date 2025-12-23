@@ -29,7 +29,7 @@
         }
     },
     "scheduler" : {
-        "type" : "steplr",
+        "type" : "cosine",
         "step_size" : 5,
         "gamma" : 0.9
     },
