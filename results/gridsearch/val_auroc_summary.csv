@@ -48,3 +48,12 @@ TranAD,7,64,0.798827,./results/gridsearch/tranad_epochs7_batch64.log,./configs/t
 TranAD,7,128,0.769727,./results/gridsearch/tranad_epochs7_batch128.log,./configs/tranad_epochs7_batch128.json
 TranAD,9,64,0.797556,./results/gridsearch/tranad_epochs9_batch64.log,./configs/tranad_epochs9_batch64.json
 TranAD,9,128,0.777971,./results/gridsearch/tranad_epochs9_batch128.log,./configs/tranad_epochs9_batch128.json
+model,brand,epochs,batch,val_auroc,log_path,config_path
+model,brand,epochs,batch,val_auroc,log_path,config_path
+TranAD,&{BRAND},&{w},32,0.873601,./results/gridsearch/tranad_3_epochs5_batch32.log,./configs/tranad_3_epochs5_batch32.json
+model,brand,epochs,batch,val_auroc,log_path,config_path
+TranAD,3,5,32,0.889923,./results/gridsearch/tranad_3_epochs5_batch32.log,./configs/tranad_3_epochs5_batch32.json
+model,brand,epochs,batch,val_auroc,log_path,config_path
+TranAD,2,5,32,0.731868,./results/gridsearch/tranad_2_epochs5_batch32.log,./configs/tranad_2_epochs5_batch32.json
+model,brand,epochs,batch,val_auroc,log_path,config_path
+TranAD,2,5,32,0.716117,./results/gridsearch/tranad_2_epochs5_batch32.log,./configs/tranad_2_epochs5_batch32.json

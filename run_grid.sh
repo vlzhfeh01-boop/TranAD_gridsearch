@@ -5,21 +5,22 @@ BASE_CONFIG="./configs/tranad_base.json"   # 템플릿 config
 RESULTS_DIR="./results/gridsearch"        # 로그/결과 저장 폴더
 DATASET="BAT"                  # --dataset 인자
 MODEL="TranAD"                            # --model 인자
-NUM_EPOCHS=(5 7 9)                             # 고정 epoch
+BRAND=2
+NUM_EPOCHS=5                             # 고정 epoch
 
 # 튜닝할 값들
-BATCH_LIST=(64 128)
+BATCH_LIST=(32)
 dropout_LIST=(0.1)
 
 mkdir -p "$RESULTS_DIR"
 
 RESULT_CSV="$RESULTS_DIR/val_auroc_summary.csv"
-echo "model,epochs,batch,val_auroc,log_path,config_path" >> "$RESULT_CSV"
+echo "model,brand,epochs,batch,val_auroc,log_path,config_path" >> "$RESULT_CSV"
 
 for w in "${NUM_EPOCHS[@]}"; do
   for ld in "${BATCH_LIST[@]}"; do
-    cfg_out="./configs/tranad_epochs${w}_batch${ld}.json"
-    log_out="${RESULTS_DIR}/tranad_epochs${w}_batch${ld}.log"
+    cfg_out="./configs/tranad_${BRAND}_epochs${w}_batch${ld}.json"
+    log_out="${RESULTS_DIR}/tranad_${BRAND}_epochs${w}_batch${ld}.log"
 
     echo "==============================================="
     echo "Running: epochs=${w}, batch=${ld}"
@@ -58,7 +59,7 @@ EOF
       val_auroc="NaN"
     fi
 
-    echo "${MODEL},${w},${ld},${val_auroc},${log_out},${cfg_out}" >> "$RESULT_CSV"
+    echo "${MODEL},${BRAND},${w},${ld},${val_auroc},${log_out},${cfg_out}" >> "$RESULT_CSV"
   done
 done
 
