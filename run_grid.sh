@@ -5,24 +5,24 @@ BASE_CONFIG="./configs/tranad_base.json"   # 템플릿 config
 RESULTS_DIR="./results/gridsearch"        # 로그/결과 저장 폴더
 DATASET="BAT"                  # --dataset 인자
 MODEL="TranAD"                            # --model 인자
-NUM_EPOCHS=(5)                              # 고정 epoch
+NUM_EPOCHS=(5 7 9)                             # 고정 epoch
 
 # 튜닝할 값들
-ratio_LIST=(0.05)
+BATCH_LIST=(64 128)
 dropout_LIST=(0.1)
 
 mkdir -p "$RESULTS_DIR"
 
 RESULT_CSV="$RESULTS_DIR/val_auroc_summary.csv"
-echo "model,epochs,dropout,val_auroc_mse,log_path,config_path" >> "$RESULT_CSV"
+echo "model,epochs,batch,val_auroc,log_path,config_path" >> "$RESULT_CSV"
 
 for w in "${NUM_EPOCHS[@]}"; do
-  for ld in "${dropout_LIST[@]}"; do
-    cfg_out="./configs/tranad_epochs${w}_dropout${ld}_mse.json"
-    log_out="${RESULTS_DIR}/tranad_epochs${w}_dropout${ld}_mse.log"
+  for ld in "${BATCH_LIST[@]}"; do
+    cfg_out="./configs/tranad_epochs${w}_batch${ld}.json"
+    log_out="${RESULTS_DIR}/tranad_epochs${w}_batch${ld}.log"
 
     echo "==============================================="
-    echo "Running: epochs=${w}, dropout=${ld}"
+    echo "Running: epochs=${w}, batch=${ld}"
     echo "Epochs: $NUM_EPOCHS"
     echo "Config: $cfg_out"
     echo "Log   : $log_out"
@@ -38,8 +38,7 @@ out_path  = "${cfg_out}"
 with open(base_path, "r") as f:
     cfg = json.load(f)
 
-cfg["scoring"]["k_ratio"] = ${ratio_LIST}
-cfg["model"]["dropout"] = ${ld}
+cfg["training"]["batch_size"] = ${ld}
 cfg["training"]["num_epochs"] = ${w}
 
 with open(out_path, "w") as f:

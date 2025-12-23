@@ -37,3 +37,14 @@ model,epochs,dropout,val_auroc,log_path,config_path
 TranAD,6,0.1,0.833809,./results/gridsearch/tranad_epochs6_dropout0.1.log,./configs/tranad_epochs6_dropout0.1.json
 TranAD,7,0.1,0.836579,./results/gridsearch/tranad_epochs7_dropout0.1.log,./configs/tranad_epochs7_dropout0.1.json
 TranAD,8,0.1,0.830630,./results/gridsearch/tranad_epochs8_dropout0.1.log,./configs/tranad_epochs8_dropout0.1.json
+model,epochs,dropout,val_auroc_mse,log_path,config_path
+TranAD,5,0.1,NaN,./results/gridsearch/tranad_epochs5_dropout0.1_mse.log,./configs/tranad_epochs5_dropout0.1_mse.json
+model,epochs,dropout,val_auroc_mse,log_path,config_path
+TranAD,5,0.1,0.793018,./results/gridsearch/tranad_epochs5_dropout0.1_mse.log,./configs/tranad_epochs5_dropout0.1_mse.json
+model,epochs,batch,val_auroc,log_path,config_path
+TranAD,5,64,0.798314,./results/gridsearch/tranad_epochs5_batch64.log,./configs/tranad_epochs5_batch64.json
+TranAD,5,128,0.773737,./results/gridsearch/tranad_epochs5_batch128.log,./configs/tranad_epochs5_batch128.json
+TranAD,7,64,0.798827,./results/gridsearch/tranad_epochs7_batch64.log,./configs/tranad_epochs7_batch64.json
+TranAD,7,128,0.769727,./results/gridsearch/tranad_epochs7_batch128.log,./configs/tranad_epochs7_batch128.json
+TranAD,9,64,0.797556,./results/gridsearch/tranad_epochs9_batch64.log,./configs/tranad_epochs9_batch64.json
+TranAD,9,128,0.777971,./results/gridsearch/tranad_epochs9_batch128.log,./configs/tranad_epochs9_batch128.json
