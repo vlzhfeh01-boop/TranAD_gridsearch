@@ -10,7 +10,7 @@ NUM_EPOCHS=5                             # 고정 epoch
 
 # 튜닝할 값들
 BATCH_LIST=(64 128)
-lr_LIST=(2e-3 4e-3)
+lr_LIST=(8e-3)
 
 mkdir -p "$RESULTS_DIR"
 
