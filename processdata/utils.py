@@ -35,6 +35,17 @@ def meanstd_normalize_dict(data_dict, mean_vals, std_vals):
     return norm_dict
 
 
+def normalize_dict(data_dict, mean_vals, std_vals, max_vals, min_vals):
+    norm_dict = {}
+
+    for cid, data in data_dict.items():
+        norm = (data - mean_vals) / np.maximum(
+            np.maximum(1e-4, std_vals), 0.1 * (max_vals - min_vals)
+        )
+        norm_dict[cid] = norm
+    return norm_dict
+
+
 def compute_min_max(train_data):
     """
     train_data: {car_id: np.array(shape=(N_i, 128, F)), ...}

@@ -16,7 +16,7 @@ train_obj = glob(f"./data/battery_brand{brand[brand_num]}/train/*.pkl")
 loaded_obj = train_obj + test_obj
 
 # brand3
-#loaded_obj = glob("./data/battery_brand3/data/*.pkl")
+# loaded_obj = glob("./data/battery_brand3/data/*.pkl")
 
 # print(loaded_obj)
 car_data, labels = sort_by_car(loaded_obj)
@@ -43,7 +43,6 @@ random.seed(0)
 # train / test split
 # normal : 10 % test, 나머지 train
 # abnormal : all test
-
 
 
 # normal split
@@ -87,10 +86,13 @@ print("Train label 분포:", Counter(train_labels.values()))
 print("Test  label 분포:", Counter(test_labels.values()))
 
 
-# 1. train_data 기준으로 normalize feature min/max 계산
+# 1. train_data 기준으로 normalize feature 계산 (Dyad 기반)
+mean_vals, std_vals = compute_mean_std(train_data)
 min_vals, max_vals = compute_min_max(train_data)
-train_data_norm = minmax_normalize_dict(train_data, min_vals, max_vals)
-test_data_norm = minmax_normalize_dict(test_data, min_vals, max_vals)
+train_data_norm = normalize_dict(train_data, mean_vals, std_vals, max_vals, min_vals)
+test_data_norm = normalize_dict(train_data, mean_vals, std_vals, max_vals, min_vals)
+# train_data_norm = minmax_normalize_dict(train_data, min_vals, max_vals)
+# test_data_norm = minmax_normalize_dict(test_data, min_vals, max_vals)
 
 # 2. train/test normalize (quantile min-max 방식)
 # low_vals, high_vals = compute_min_max_quantile(train_data)
