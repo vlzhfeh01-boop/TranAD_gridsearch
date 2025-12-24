@@ -8,7 +8,7 @@ from processdata.utils import *
 
 
 brand = [0, 1, 2, 3]
-brand_num = 2  # change this number
+brand_num = 1  # change this number
 
 # brand1/2
 test_obj = glob(f"./data/battery_brand{brand[brand_num]}/test/*.pkl")
