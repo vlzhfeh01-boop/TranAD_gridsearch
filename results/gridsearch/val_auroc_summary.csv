@@ -67,3 +67,5 @@ model,brand,batch,lr,val_auroc,log_path,config_path
 TranAD,1,64,8e-3,0.774963,./results/gridsearch/tranad_1_batch64_lr8e-3.log,./configs/tranad_1_batch64_lr8e-3.json
 model,brand,batch,lr,val_auroc,log_path,config_path
 TranAD,1,32,1e-3,NaN,./results/gridsearch/tranad_1_batch32_lr1e-3.log,./configs/tranad_1_batch32_lr1e-3.json
+model,brand,batch,lr,val_auroc,log_path,config_path
+TranAD,1,32,1e-3,0.404835,./results/gridsearch/tranad_1_batch32_lr1e-3.log,./configs/tranad_1_batch32_lr1e-3.json
