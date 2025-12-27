@@ -106,7 +106,7 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, cfg, training=True
                     )
                     scores.append(score)
                 car_scores[cid] = scores
-            return car_scores, train_scores
+            return car_scores
 
 
 if __name__ == "__main__":
@@ -181,11 +181,11 @@ if __name__ == "__main__":
         )
         # loss, y_pred = backprop(0, model, testD, testO, optimizer, scheduler, training=False)
         # Added
-        scores, train_scores = backprop(
+        scores = backprop(
             0, model, testD, trainO, optimizer, scheduler, training=False, cfg=cfg
         )
-        print("Calculate Training Score")
-        train_scores, _ = backprop(
+        print("Calculate Training Data Score")
+        train_scores = backprop(
             0, model, train_dict, trainO, optimizer, scheduler, cfg, training=False
         )
 
