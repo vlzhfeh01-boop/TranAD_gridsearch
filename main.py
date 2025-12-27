@@ -86,18 +86,11 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, cfg, training=True
             tqdm.write(f"Epoch {epoch},\tL1 = {total_loss / max(1, count)}")
             return avg_loss, optimizer.param_groups[0]["lr"]
         else:
-
-            q = cfg["scoring"]["percentile_q"]
             reduce_mode = cfg["scoring"]["reduce"]
             k_ratio = cfg["scoring"]["k_ratio"]
             car_p = cfg["scoring"]["car_positive_ratio"]
-            print("Get Threshold & Train data score:")
-            threshold, train_scores = fit_threshold(
-                model, trainO, cfg=cfg, reduce=reduce_mode, q=q
-            )
-
+            
             # Changed mainly
-            print("Calculate Test Scores : ")
             car_scores = {}
             for cid, arr in tqdm(data.items()):
                 scores = []
@@ -113,25 +106,7 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, cfg, training=True
                     )
                     scores.append(score)
                 car_scores[cid] = scores
-            preds = {}
-            for cid, scores in car_scores.items():
-                # snippet-level -> car-level
-                ratio = sum(s > threshold for s in scores) / len(scores)
-                pred_car = 1 if ratio >= car_p else 0
-                preds[cid] = pred_car
-            return car_scores, preds, threshold, train_scores
-    else:
-        y_pred = model(data)
-        loss = l(y_pred, data)
-        if training:
-            tqdm.write(f"Epoch {epoch},\tMSE = {loss}")
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-            scheduler.step()
-            return loss.item(), optimizer.param_groups[0]["lr"]
-        else:
-            return loss.detach().numpy(), y_pred.detach().numpy()
+            return car_scores, train_scores
 
 
 if __name__ == "__main__":
@@ -206,11 +181,11 @@ if __name__ == "__main__":
         )
         # loss, y_pred = backprop(0, model, testD, testO, optimizer, scheduler, training=False)
         # Added
-        scores, preds, thr, train_scores = backprop(
+        scores, train_scores = backprop(
             0, model, testD, trainO, optimizer, scheduler, training=False, cfg=cfg
         )
-        print("Threshold : ", thr)
-        train_scores, _, _, _ = backprop(
+        print("Calculate Training Score")
+        train_scores, _ = backprop(
             0, model, train_dict, trainO, optimizer, scheduler, cfg, training=False
         )
 
@@ -225,6 +200,8 @@ if __name__ == "__main__":
     np.save(out_dir / f"{prefix}_scores.npy", scores, allow_pickle=True)
     np.save(out_dir / "train_scores.npy", train_scores, allow_pickle=True)
 
+    print("Save Score files Finished.")
+    
     # AUROC scoring
     print("AUROC Scoring by using DyAD method")
     all_snippet_df, dataframe, all_car_num_list, ind_car_num_list, ood_car_num_list = (

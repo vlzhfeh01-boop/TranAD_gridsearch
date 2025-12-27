@@ -80,10 +80,17 @@ def snippet_score(
     else:
         x2_last = x2
     """
-    x2_last = x2
-    # (1,B,F) -> (B,)윈도우별 score
+    if x2.dim() == 3 and x2.shape[0] != 1:
+        x2_last = x2[-1:, :, :]   # (1,B,F)
+    else:
+        x2_last = x2              # (1,B,F)
+
+    # (1,B,F) -> (B,) 윈도우별 score
     res = reconstruction_loss(x2_last, tgt, loss_type=loss_type)  # (1,B,F)
-    score_w = res.mean(dim=2).view(-1)  # (B,)
+    err_f = res.squeeze(0)
+    top3 = torch.topk(err_f,3,dim=1).values
+    score_w = top3.mean(dim=1)  # (B,)
+    # was : mean all features. now : top3 feature-mean
 
     B = score_w.numel()
 
