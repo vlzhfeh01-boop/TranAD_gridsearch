@@ -234,8 +234,9 @@ def load_dataset(dataset, test=False):
         loader.append(np.load(os.path.join(folder, f"{file}.npy"), allow_pickle=True))
     # loader = [i[:, debug:debug+1] for i in loader]
 
-    train_loader = DataLoader(loader[0][:, :, :], batch_size=loader[0].shape[0])
-
+    train_loader = DataLoader(loader[0][:, :, :-1], batch_size=loader[0].shape[0])
+    #timestamp 제외
+    
     # test가 True이면, test data를 받아온다.
     test_loader = loader[1].item()
     labels = loader[2].item()
