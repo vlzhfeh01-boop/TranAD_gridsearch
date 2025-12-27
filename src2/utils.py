@@ -234,18 +234,17 @@ def load_dataset(dataset, test=False):
         loader.append(np.load(os.path.join(folder, f"{file}.npy"), allow_pickle=True))
     # loader = [i[:, debug:debug+1] for i in loader]
 
-    train_loader = DataLoader(loader[0][:, :, 1:], batch_size=loader[0].shape[0])
+    train_loader = DataLoader(loader[0][:, :, :], batch_size=loader[0].shape[0])
     #timestamp 제외
     
     # test가 True이면, test data를 받아온다.
     test_loader = loader[1].item()
-    test_loader = {cid: arr[:, :, 1:] for cid, arr in test_loader.items()}
+    
     labels = loader[2].item()
 
     train_data_dict = np.load(
         os.path.join(folder, "train_dict.npy"), allow_pickle=True
     ).item()
-    train_data_dict = {cid: arr[:, :, 1:] for cid, arr in train_data_dict.items()}
 
     train_labels = loader[3].item()
     # 전체 데이터를 데이터로터 타입으로 변환
