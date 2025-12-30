@@ -4,6 +4,7 @@ data/
 processed/
 *.pt
 *.pth
+*.npy
 
 # python
 __pycache__/
