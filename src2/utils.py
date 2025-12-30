@@ -84,7 +84,7 @@ def snippet_score(
         x2_last = x2[-1:, :, :]   # (1,B,F)
     else:
         x2_last = x2              # (1,B,F)
-
+    
     # (1,B,F) -> (B,) 윈도우별 score
     res = reconstruction_loss(x2_last, tgt, loss_type=loss_type)  # (1,B,F)
     err_f = res.squeeze(0)
@@ -95,15 +95,15 @@ def snippet_score(
     B = score_w.numel()
 
     if reduce == "mean":
-        return score_w.mean().item()
+        return score_w.mean().item(),x2_last.squeeze(0)
     elif reduce == "topk":
         k = max(1, int(B * k_ratio))
         topk_vals, _ = torch.topk(score_w, k)
-        return topk_vals.mean().item()
+        return topk_vals.mean().item(),x2_last.squeeze(0)
     elif reduce == "percentile":
-        return torch.quantile(score_w, p / 100).item()
+        return torch.quantile(score_w, p / 100).item(),x2_last.squeeze(0)
     else:  # max
-        return score_w.max().item()
+        return score_w.max().item(),x2_last.squeeze(0)
 
 
 def fit_threshold(

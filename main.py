@@ -92,11 +92,13 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, cfg, training=True
             
             # Changed mainly
             car_scores = {}
+            car_reconstruction_data = {}
             for cid, arr in tqdm(data.items()):
                 scores = []
+                result_data = []
                 arr = torch.as_tensor(arr[:, :, :])
                 for i in range(arr.shape[0]):
-                    score = snippet_score(
+                    score,result = snippet_score(
                         model,
                         arr[i],
                         cfg=cfg,
@@ -104,9 +106,11 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, cfg, training=True
                         k_ratio=k_ratio,
                         p=car_p,
                     )
+                    result_data.append(result)
                     scores.append(score)
                 car_scores[cid] = scores
-            return car_scores
+                car_reconstruction_data[cid] = result_data
+            return car_scores, car_reconstruction_data
 
 
 if __name__ == "__main__":
@@ -181,11 +185,11 @@ if __name__ == "__main__":
         )
         # loss, y_pred = backprop(0, model, testD, testO, optimizer, scheduler, training=False)
         # Added
-        scores = backprop(
+        scores,test_rec_data = backprop(
             0, model, testD, trainO, optimizer, scheduler, training=False, cfg=cfg
         )
         print("Calculate Training Data Score")
-        train_scores = backprop(
+        train_scores,train_rec_data = backprop(
             0, model, train_dict, trainO, optimizer, scheduler, cfg, training=False
         )
 
@@ -198,7 +202,9 @@ if __name__ == "__main__":
 
     prefix = "test"
     np.save(out_dir / f"{prefix}_scores.npy", scores, allow_pickle=True)
+    np.save(out_dir / f"{prefix}_result_data.npy",test_rec_data, allow_pickle=True)
     np.save(out_dir / "train_scores.npy", train_scores, allow_pickle=True)
+    np.save(out_dir / "train_result_data.npy",train_rec_data, allow_pickle=True)
 
     print("Save Score files Finished.")
     
