@@ -202,9 +202,9 @@ if __name__ == "__main__":
 
     prefix = "test"
     np.save(out_dir / f"{prefix}_scores.npy", scores, allow_pickle=True)
-    np.save(out_dir / f"{prefix}_result_data.npy",test_rec_data, allow_pickle=True)
+    torch.save(test_rec_data, out_dir / f"{prefix}_rec_data.pt")
     np.save(out_dir / "train_scores.npy", train_scores, allow_pickle=True)
-    np.save(out_dir / "train_result_data.npy",train_rec_data, allow_pickle=True)
+    torch.save(train_rec_data, out_dir / "train_rec_data.pt")
 
     print("Save Score files Finished.")
     
