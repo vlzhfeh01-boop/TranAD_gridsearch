@@ -75,3 +75,10 @@ model,brand,batch,lr,val_auroc,log_path,config_path
 TranAD,1,32,1e-3,NaN,./results/gridsearch/tranad_1_batch32_lr1e-3.log,./configs/tranad_1_batch32_lr1e-3.json
 model,brand,batch,lr,val_auroc,log_path,config_path
 TranAD,1,32,1e-3,0.765367,./results/gridsearch/tranad_1_batch32_lr1e-3.log,./configs/tranad_1_batch32_lr1e-3.json
+model,brand,batch,dimff,val_auroc,log_path,config_path
+TranAD,1,32,4,0.683957,./results/gridsearch/tranad_1_batch32_dimff4.log,./configs/tranad_1_batch32_dimff4.json
+TranAD,1,32,6,0.769667,./results/gridsearch/tranad_1_batch32_dimff6.log,./configs/tranad_1_batch32_dimff6.json
+TranAD,1,32,8,0.841347,./results/gridsearch/tranad_1_batch32_dimff8.log,./configs/tranad_1_batch32_dimff8.json
+model,brand,batch,dimff,val_auroc,log_path,config_path
+TranAD,1,32,10,0.743212,./results/gridsearch/tranad_1_batch32_dimff10.log,./configs/tranad_1_batch32_dimff10.json
+TranAD,1,32,12,0.697623,./results/gridsearch/tranad_1_batch32_dimff12.log,./configs/tranad_1_batch32_dimff12.json
