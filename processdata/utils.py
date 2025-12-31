@@ -18,6 +18,27 @@ def sort_by_car(loaded_obj):
 
     return car_data, labels
 
+def add_dx_features(car_data):
+    """
+    
+    """
+    new_car_data = {}
+
+    for cid, val in car_data.items():
+        new_car_data[cid]=[]
+        for data in val:
+            print(data.shape)
+            x = data[:,[1]] # current col
+
+            dx = np.empty_like(x)
+            dx[:-1] = x[1:] - x[:-1]
+            dx[-1] = x[-1] - x[-2]
+            print(dx.shape)
+            data_aug = np.concatenate([data,dx],axis=1)
+            new_car_data[cid].append(data_aug)
+    return new_car_data
+
+
 
 def compute_mean_std(train_data):
     all_data = np.concatenate(list(train_data.values()), axis=0)

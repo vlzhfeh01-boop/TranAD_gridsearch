@@ -20,6 +20,8 @@ loaded_obj = train_obj + test_obj
 
 # print(loaded_obj)
 car_data, labels = sort_by_car(loaded_obj)
+# Add dx features
+car_data = add_dx_features(car_data)
 
 for k, v in labels.items():
     if v == 10:
