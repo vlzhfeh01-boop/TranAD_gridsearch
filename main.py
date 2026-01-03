@@ -52,7 +52,7 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, cfg, training=True
 
                 src = (
                     batch.permute(2, 0, 1, 3).contiguous().view(w_size, -1, F)
-                )  # (10,128,8)
+                )  # (Window,128,8)
 
                 tgt = src[-1, :, :].unsqueeze(0)
                 # forward per one snippet
@@ -69,7 +69,10 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, cfg, training=True
                     # loss2 = mse(x2, tgt).mean()
                     loss1 = reconstruction_loss(x1, tgt, loss_type=loss_type).mean()
                     loss2 = reconstruction_loss(x2, tgt, loss_type=loss_type).mean()
-                    loss = (1 / n) * loss1 + (1 - 1 / n) * loss2
+                    if n<2:
+                        loss = (1 / n) * loss1 + (1 - 1 / n) * loss2
+                    else :
+                        loss = loss2
                 else:
                     x_pred = out
                     loss = reconstruction_loss(x_pred, tgt, loss_type=loss_type).mean()
