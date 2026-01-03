@@ -90,16 +90,16 @@ print("Test  label 분포:", Counter(test_labels.values()))
 
 # 1. train_data 기준으로 normalize feature 계산 (Dyad 기반)
 #mean_vals, std_vals = compute_mean_std(train_data)
-min_vals, max_vals = compute_min_max(train_data)
+#min_vals, max_vals = compute_min_max(train_data)
 #train_data_norm = normalize_dict(train_data, mean_vals, std_vals, max_vals, min_vals)
 #test_data_norm = normalize_dict(test_data, mean_vals, std_vals, max_vals, min_vals)
-train_data_norm = minmax_normalize_dict(train_data, min_vals, max_vals)
-test_data_norm = minmax_normalize_dict(test_data, min_vals, max_vals)
+#train_data_norm = minmax_normalize_dict(train_data, min_vals, max_vals)
+#test_data_norm = minmax_normalize_dict(test_data, min_vals, max_vals)
 
 # 2. train/test normalize (quantile min-max 방식)
-# low_vals, high_vals = compute_min_max_quantile(train_data)
-# train_data_norm = lowhigh_norm_dict_quantile(train_data,low_vals,high_vals)
-# test_data_norm = lowhigh_norm_dict_quantile(test_data,low_vals,high_vals)
+low_vals, high_vals = compute_min_max_quantile(train_data)
+train_data_norm = lowhigh_norm_dict_quantile(train_data,low_vals,high_vals)
+test_data_norm = lowhigh_norm_dict_quantile(test_data,low_vals,high_vals)
 
 # 3. z-normalize
 # mean_vals, std_vals = compute_mean_std(train_data)
@@ -156,8 +156,8 @@ np.save(
 )
 
 np.save(
-    f"minmax_stats_brand{brand[brand_num]}.npy",
-    {"min": min_vals, "max": max_vals},
+    f"hilow_stats_brand{brand[brand_num]}.npy",
+    {"high": high_vals, "low": low_vals},
     allow_pickle=True,
 )
 

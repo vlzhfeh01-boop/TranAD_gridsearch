@@ -88,6 +88,10 @@ def snippet_score(
     # (1,B,F) -> (B,) 윈도우별 score
     res = reconstruction_loss(x2_last, tgt, loss_type=loss_type)  # (1,B,F)
     err_f = res.squeeze(0)
+
+    # feature extraction
+    err_f = err_f[:,:]
+
     top3 = torch.topk(err_f,3,dim=1).values
     score_w = top3.mean(dim=1)  # (B,)
     # was : mean all features. now : top3 feature-mean

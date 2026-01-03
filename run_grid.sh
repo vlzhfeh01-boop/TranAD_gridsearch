@@ -10,7 +10,7 @@ NUM_EPOCHS=5                             # 고정 epoch
 
 # 튜닝할 값들
 BATCH_LIST=(32)
-dimff_LIST=(10 12)
+dimff_LIST=(8)
 
 mkdir -p "$RESULTS_DIR"
 
@@ -19,8 +19,8 @@ echo "model,brand,batch,dimff,val_auroc,log_path,config_path" >> "$RESULT_CSV"
 
 for w in "${BATCH_LIST[@]}"; do
   for ld in "${dimff_LIST[@]}"; do
-    cfg_out="./configs/tranad_${BRAND}_batch${w}_dimff${ld}.json"
-    log_out="${RESULTS_DIR}/tranad_${BRAND}_batch${w}_dimff${ld}.log"
+    cfg_out="./configs/tranad_col11_${BRAND}_batch${w}_dimff${ld}.json"
+    log_out="${RESULTS_DIR}/tranad_col11_${BRAND}_batch${w}_dimff${ld}.log"
 
     echo "==============================================="
     echo "Running: batch=${w}, dimff=${ld}"

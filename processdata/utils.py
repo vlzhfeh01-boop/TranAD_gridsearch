@@ -27,7 +27,7 @@ def add_dx_features(car_data):
     for cid, val in car_data.items():
         new_car_data[cid]=[]
         for data in val:
-            x = data[:,[1]] # current col
+            x = data[:,[1,3,4]] # current,max_volt,min_volt col
 
             dx = np.empty_like(x)
             dx[:-1] = x[1:] - x[:-1]
