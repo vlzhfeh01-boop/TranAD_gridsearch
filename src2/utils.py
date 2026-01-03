@@ -80,6 +80,9 @@ def snippet_score(
     else:
         x2_last = x2
     """
+    
+    print("shape of x2 : ", x2.shape)
+
     if x2.dim() == 3 and x2.shape[0] != 1:
         x2_last = x2[-1:, :, :]   # (1,B,F)
     else:
