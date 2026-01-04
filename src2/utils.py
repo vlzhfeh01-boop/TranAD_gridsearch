@@ -55,7 +55,7 @@ def snippet_score(
     model_device = next(model.parameters()).device
     if device is None:
         device = model_device
-    else :
+    else:
         device = torch.device(device)
 
     loss_type = cfg["training"]["loss_type"]
@@ -82,33 +82,33 @@ def snippet_score(
     """
 
     if x2.dim() == 3 and x2.shape[0] != 1:
-        x2_last = x2[-1:, :, :]   # (1,B,F)
+        x2_last = x2[-1:, :, :]  # (1,B,F)
     else:
-        x2_last = x2              # (1,B,F)
-    
+        x2_last = x2  # (1,B,F)
+
     # (1,B,F) -> (B,) 윈도우별 score
     res = reconstruction_loss(x2_last, tgt, loss_type=loss_type)  # (1,B,F)
     err_f = res.squeeze(0)
 
     # feature extraction
-    err_f = err_f[:,:]
+    err_f = err_f[:, :]
 
-    top3 = torch.topk(err_f,3,dim=1).values
+    top3 = torch.topk(err_f, 3, dim=1).values
     score_w = top3.mean(dim=1)  # (B,)
     # was : mean all features. now : top3 feature-mean
 
     B = score_w.numel()
 
     if reduce == "mean":
-        return score_w.mean().item(),x2_last.squeeze(0)
+        return score_w.mean().item(), x2_last.squeeze(0)
     elif reduce == "topk":
         k = max(1, int(B * k_ratio))
         topk_vals, _ = torch.topk(score_w, k)
-        return topk_vals.mean().item(),x2_last.squeeze(0)
+        return topk_vals.mean().item(), x2_last.squeeze(0)
     elif reduce == "percentile":
-        return torch.quantile(score_w, p / 100).item(),x2_last.squeeze(0)
+        return torch.quantile(score_w, p / 100).item(), x2_last.squeeze(0)
     else:  # max
-        return score_w.max().item(),x2_last.squeeze(0)
+        return score_w.max().item(), x2_last.squeeze(0)
 
 
 def fit_threshold(
@@ -140,9 +140,9 @@ def convert_to_windows_mod(data, cfg, model="TranAD"):
     return torch.stack(windows, dim=0)
 
 
-def load_model(modelname,device, dims, args, cfg):
+def load_model(modelname, device, dims, args, cfg):
     import src2.models
-    
+
     model_class = getattr(src2.models, modelname)
     model = model_class(dims, cfg).float()
     model = model.to(device).float()
@@ -169,7 +169,7 @@ def load_model(modelname,device, dims, args, cfg):
         raise ValueError(f"Unsupported optimizer type: {opt_type}")
 
     # Scheduler
-    sch_cfg = cfg.get("training", {}).get("scheduler", {})
+    sch_cfg = cfg.get("scheduler", {})
     sch_type = sch_cfg.get("type", "steplr").lower()
 
     if sch_type == "steplr":
@@ -182,8 +182,7 @@ def load_model(modelname,device, dims, args, cfg):
         )
     elif sch_type == "cosine":
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-            optimizer,
-            cfg["training"]["num_epochs"]
+            optimizer, cfg["training"]["num_epochs"]
         )
     elif sch_type == "none":
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=1.0)
@@ -240,11 +239,11 @@ def load_dataset(dataset, test=False):
     # loader = [i[:, debug:debug+1] for i in loader]
 
     train_loader = DataLoader(loader[0][:, :, :], batch_size=loader[0].shape[0])
-    #timestamp 제외
-    
+    # timestamp 제외
+
     # test가 True이면, test data를 받아온다.
     test_loader = loader[1].item()
-    
+
     labels = loader[2].item()
 
     train_data_dict = np.load(

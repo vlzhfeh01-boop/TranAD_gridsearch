@@ -69,10 +69,9 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, cfg, training=True
                     # loss2 = mse(x2, tgt).mean()
                     loss1 = reconstruction_loss(x1, tgt, loss_type=loss_type).mean()
                     loss2 = reconstruction_loss(x2, tgt, loss_type=loss_type).mean()
-                    if n < 4:
-                        loss = (1 / n) * loss1 + (1 - 1 / n) * loss2
-                    else:
-                        loss = loss2
+                    w1 = 1 / n
+                    w2 = max(1 - w1, 0.2)
+                    loss = w1 * loss1 + w2 * loss2
                 else:
                     x_pred = out
                     loss = reconstruction_loss(x_pred, tgt, loss_type=loss_type).mean()
