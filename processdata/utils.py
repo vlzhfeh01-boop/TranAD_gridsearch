@@ -6,7 +6,7 @@ import torch
 def sort_by_car(loaded_obj):
     labels = {}
     car_data = {}
-    mileage = {}
+    mileage_data = {}
     for path in tqdm(loaded_obj):
         obj = torch.load(path)
         key = int(obj[1]["car"])
@@ -15,7 +15,7 @@ def sort_by_car(loaded_obj):
         if key not in car_data.keys():
             labels[key] = label
             car_data[key] = [obj[0]]
-            mileage[key] = mileage
+            mileage_data[key] = mileage
         else:
             car_data[key].append(obj[0])
 
