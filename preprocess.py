@@ -121,6 +121,9 @@ for cid, arr in train_data_norm.items():
 
 train_snippets = np.array(train_snippets)
 mileage_snippets = np.array(mileage_snippets)
+mileage_snippets = (mileage_snippets - mileage_snippets.min()) / (
+    mileage_snippets.max() - mileage_snippets.min()
+)
 print("Train_snippets shape : ", train_snippets.shape)
 print("Mileage_snippets shape : ", mileage_snippets)
 # Current Z-norm
