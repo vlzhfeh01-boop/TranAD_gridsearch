@@ -19,7 +19,7 @@ loaded_obj = train_obj + test_obj
 # loaded_obj = glob("./data/battery_brand3/data/*.pkl")
 
 # print(loaded_obj)
-car_data, labels, mileage = sort_by_car(loaded_obj)
+car_data, labels, mileage_data = sort_by_car(loaded_obj)
 # Add dx features
 car_data = add_dx_features(car_data)
 
@@ -117,7 +117,7 @@ for cid, arr in train_data_norm.items():
         # std = cur.std() + 1e-8
         # arr[i][:,current_idx] = (cur-mean)/std
         train_snippets.append(arr[i])
-        mileage_snippets.append(mileage[cid])
+        mileage_snippets.append(mileage_data[cid])
 
 train_snippets = np.array(train_snippets)
 mileage_snippets = np.array(mileage_snippets)

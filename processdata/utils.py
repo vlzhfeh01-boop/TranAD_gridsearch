@@ -19,7 +19,7 @@ def sort_by_car(loaded_obj):
         else:
             car_data[key].append(obj[0])
 
-    return car_data, labels, mileage
+    return car_data, labels, mileage_data
 
 
 def add_dx_features(car_data):
