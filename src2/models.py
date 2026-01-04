@@ -75,6 +75,12 @@ class TranAD(nn.Module):
 
         self.fcn = nn.Sequential(nn.Linear(self.d_model, self.n_feats), nn.Sigmoid())
         self.input_proj = nn.Linear(2 * self.n_feats, self.d_model)
+        # 7) Mileage MLP
+        self.mileage_head = nn.Sequential(
+            nn.Linear(self.d_model, self.dim_feedforward),
+            nn.ReLU(),
+            nn.Linear(self.dim_feedforward, 1),
+        )
 
     def encode(self, src, c, tgt):
         src = torch.cat((src, c), dim=2)
@@ -88,10 +94,16 @@ class TranAD(nn.Module):
         return tgt, memory
 
     def forward(self, src, tgt):
+
         # Phase 1 - Without anomaly scores
         c = torch.zeros_like(src)
+        # mileage
+        _, mem1 = self.encode(src, c, tgt)
+
         x1 = self.fcn(self.transformer_decoder1(*self.encode(src, c, tgt)))
+        h = mem1.mean(dim=0)
+        mileage_hat = self.mileage_head(h)
         # Phase 2 - With anomaly scores
         c = (x1 - src) ** 2
         x2 = self.fcn(self.transformer_decoder2(*self.encode(src, c, tgt)))
-        return x1, x2
+        return x1, x2, mileage_hat

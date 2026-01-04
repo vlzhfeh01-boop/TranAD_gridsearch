@@ -18,7 +18,9 @@ from sklearn.metrics import roc_auc_score, roc_curve
 import matplotlib.pyplot as plt
 
 
-def backprop(epoch, model, data, dataO, optimizer, scheduler, cfg, training=True):
+def backprop(
+    epoch, model, data, mileage, dataO, optimizer, scheduler, cfg, training=True
+):
     feats = dataO.shape[1]
     # Added
     # TranAD Shape = (N,128,10,8)
@@ -31,16 +33,18 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, cfg, training=True
             total_loss = 0.0
             count = 0
             data_x = torch.as_tensor(data, dtype=torch.float32)
-
+            data_m = torch.as_tensor(mileage, dtype=torch.float32)
             batch_size = cfg["training"]["batch_size"]
             loss_type = cfg["training"]["loss_type"]
-            dataloader = DataLoader(data_x, shuffle=True, batch_size=batch_size)
+            dataset = TensorDataset(data_x, data_m)
+            dataloader = DataLoader(dataset, shuffle=True, batch_size=batch_size)
             count = 0
-            for batch in tqdm(dataloader):
+            for batch_x, batch_m in tqdm(dataloader):
                 optimizer.zero_grad()
-                batch = batch.to(device, non_blocking=True)
+                batch_x = batch_x.to(device, non_blocking=True)
+                batch_m = batch_m.to(device, non_blocking=True)
 
-                batch = convert_to_windows_mod(batch, cfg, model)
+                batch = convert_to_windows_mod(batch_x, cfg, model)
 
                 B, N_win, L, F = (
                     batch.shape
@@ -57,26 +61,20 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, cfg, training=True
                 tgt = src[-1, :, :].unsqueeze(0)
                 # forward per one snippet
 
-                out = model(src, tgt)  # return (x1,x2) or tensor
+                x1, x2, mileage_hat = model(src, tgt)  # return (x1,x2) or tensor
+                # mileage_hat shape보고 batch_m어떻게 바꿔야 할지 결정하기.
 
-                # loss 설정
-                if isinstance(out, tuple):
-                    x1, x2 = out
+                # loss 설정 (rec loss + mileage loss)
 
-                    assert x1.shape == tgt.shape and x2.shape == tgt.shape
+                # loss1 = mse(x1, tgt).mean()
+                # loss2 = mse(x2, tgt).mean()
+                loss1 = reconstruction_loss(x1, tgt, loss_type=loss_type).mean()
+                loss2 = reconstruction_loss(x2, tgt, loss_type=loss_type).mean()
+                w1 = 1 / n
+                w2 = max(1 - w1, 0.2)
+                loss = w1 * loss1 + w2 * loss2
 
-                    # loss1 = mse(x1, tgt).mean()
-                    # loss2 = mse(x2, tgt).mean()
-                    loss1 = reconstruction_loss(x1, tgt, loss_type=loss_type).mean()
-                    loss2 = reconstruction_loss(x2, tgt, loss_type=loss_type).mean()
-                    w1 = 1 / n
-                    w2 = max(1 - w1, 0.2)
-                    loss = w1 * loss1 + w2 * loss2
-                else:
-                    x_pred = out
-                    loss = reconstruction_loss(x_pred, tgt, loss_type=loss_type).mean()
-
-                    # backward
+                # backward
                 loss.backward()
                 optimizer.step()
 
@@ -127,7 +125,7 @@ if __name__ == "__main__":
     cfg["data"]["dataset"] = args.dataset
     cfg["model"]["name"] = args.model
 
-    train_loader, test_loader, labels, train_dict, train_labels = load_dataset(
+    train_loader, test_loader, labels, train_dict, train_labels, mileage = load_dataset(
         cfg["data"]["output_folder"] + args.dataset, args.test
     )
     # Batch Size = Entire Time Series Data (L) 전체 데이터를 받아온다.
@@ -161,7 +159,7 @@ if __name__ == "__main__":
         for e in tqdm(list(range(epoch + 1, epoch + num_epochs + 1))):
 
             lossT, lr = backprop(
-                e, model, s, trainO, optimizer, scheduler, cfg, training=True
+                e, model, s, mileage, trainO, optimizer, scheduler, cfg, training=True
             )
 
             accuracy_list.append((lossT, lr))
@@ -188,11 +186,27 @@ if __name__ == "__main__":
         # loss, y_pred = backprop(0, model, testD, testO, optimizer, scheduler, training=False)
         # Added
         scores, test_rec_data = backprop(
-            0, model, testD, trainO, optimizer, scheduler, training=False, cfg=cfg
+            0,
+            model,
+            testD,
+            mileage,
+            trainO,
+            optimizer,
+            scheduler,
+            training=False,
+            cfg=cfg,
         )
         print("Calculate Training Data Score")
         train_scores, train_rec_data = backprop(
-            0, model, train_dict, trainO, optimizer, scheduler, cfg, training=False
+            0,
+            model,
+            train_dict,
+            mileage,
+            trainO,
+            optimizer,
+            scheduler,
+            cfg,
+            training=False,
         )
 
     print("Save Score Files")

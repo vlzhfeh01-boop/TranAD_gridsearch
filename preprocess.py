@@ -19,7 +19,7 @@ loaded_obj = train_obj + test_obj
 # loaded_obj = glob("./data/battery_brand3/data/*.pkl")
 
 # print(loaded_obj)
-car_data, labels = sort_by_car(loaded_obj)
+car_data, labels, mileage = sort_by_car(loaded_obj)
 # Add dx features
 car_data = add_dx_features(car_data)
 
@@ -89,17 +89,17 @@ print("Test  label 분포:", Counter(test_labels.values()))
 
 
 # 1. train_data 기준으로 normalize feature 계산 (Dyad 기반)
-#mean_vals, std_vals = compute_mean_std(train_data)
-#min_vals, max_vals = compute_min_max(train_data)
-#train_data_norm = normalize_dict(train_data, mean_vals, std_vals, max_vals, min_vals)
-#test_data_norm = normalize_dict(test_data, mean_vals, std_vals, max_vals, min_vals)
-#train_data_norm = minmax_normalize_dict(train_data, min_vals, max_vals)
-#test_data_norm = minmax_normalize_dict(test_data, min_vals, max_vals)
+# mean_vals, std_vals = compute_mean_std(train_data)
+# min_vals, max_vals = compute_min_max(train_data)
+# train_data_norm = normalize_dict(train_data, mean_vals, std_vals, max_vals, min_vals)
+# test_data_norm = normalize_dict(test_data, mean_vals, std_vals, max_vals, min_vals)
+# train_data_norm = minmax_normalize_dict(train_data, min_vals, max_vals)
+# test_data_norm = minmax_normalize_dict(test_data, min_vals, max_vals)
 
 # 2. train/test normalize (quantile min-max 방식)
 low_vals, high_vals = compute_min_max_quantile(train_data)
-train_data_norm = lowhigh_norm_dict_quantile(train_data,low_vals,high_vals)
-test_data_norm = lowhigh_norm_dict_quantile(test_data,low_vals,high_vals)
+train_data_norm = lowhigh_norm_dict_quantile(train_data, low_vals, high_vals)
+test_data_norm = lowhigh_norm_dict_quantile(test_data, low_vals, high_vals)
 
 # 3. z-normalize
 # mean_vals, std_vals = compute_mean_std(train_data)
@@ -108,6 +108,7 @@ test_data_norm = lowhigh_norm_dict_quantile(test_data,low_vals,high_vals)
 
 # current_idx = 1
 train_snippets = []
+mileage_snippets = []
 for cid, arr in train_data_norm.items():
     for i in range(arr.shape[0]):
         # current z-norm 진행
@@ -116,10 +117,12 @@ for cid, arr in train_data_norm.items():
         # std = cur.std() + 1e-8
         # arr[i][:,current_idx] = (cur-mean)/std
         train_snippets.append(arr[i])
+        mileage_snippets.append(mileage[cid])
 
 train_snippets = np.array(train_snippets)
+mileage_snippets = np.array(mileage_snippets)
 print("Train_snippets shape : ", train_snippets.shape)
-
+print("Mileage_snippets shape : ", mileage_snippets)
 # Current Z-norm
 """
 test_snippets = {}

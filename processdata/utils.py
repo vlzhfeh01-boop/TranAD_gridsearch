@@ -6,17 +6,21 @@ import torch
 def sort_by_car(loaded_obj):
     labels = {}
     car_data = {}
+    mileage = {}
     for path in tqdm(loaded_obj):
         obj = torch.load(path)
         key = int(obj[1]["car"])
         label = int(obj[1]["label"])
+        mileage = float(obj[1]["mileage"])
         if key not in car_data.keys():
             labels[key] = label
             car_data[key] = [obj[0]]
+            mileage[key] = mileage
         else:
             car_data[key].append(obj[0])
 
-    return car_data, labels
+    return car_data, labels, mileage
+
 
 def add_dx_features(car_data):
     """
@@ -25,17 +29,16 @@ def add_dx_features(car_data):
     new_car_data = {}
 
     for cid, val in car_data.items():
-        new_car_data[cid]=[]
+        new_car_data[cid] = []
         for data in val:
-            x = data[:,[1,3,4]] # current,max_volt,min_volt col
+            x = data[:, [1, 3, 4]]  # current,max_volt,min_volt col
 
             dx = np.empty_like(x)
             dx[:-1] = x[1:] - x[:-1]
             dx[-1] = x[-1] - x[-2]
-            data_aug = np.concatenate([data,dx],axis=1)
+            data_aug = np.concatenate([data, dx], axis=1)
             new_car_data[cid].append(data_aug)
     return new_car_data
-
 
 
 def compute_mean_std(train_data):
