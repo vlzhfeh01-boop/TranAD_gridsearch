@@ -69,9 +69,9 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, cfg, training=True
                     # loss2 = mse(x2, tgt).mean()
                     loss1 = reconstruction_loss(x1, tgt, loss_type=loss_type).mean()
                     loss2 = reconstruction_loss(x2, tgt, loss_type=loss_type).mean()
-                    if n<2:
+                    if n < 4:
                         loss = (1 / n) * loss1 + (1 - 1 / n) * loss2
-                    else :
+                    else:
                         loss = loss2
                 else:
                     x_pred = out
@@ -92,7 +92,7 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, cfg, training=True
             reduce_mode = cfg["scoring"]["reduce"]
             k_ratio = cfg["scoring"]["k_ratio"]
             car_p = cfg["scoring"]["car_positive_ratio"]
-            
+
             # Changed mainly
             car_scores = {}
             car_reconstruction_data = {}
@@ -101,7 +101,7 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, cfg, training=True
                 result_data = []
                 arr = torch.as_tensor(arr[:, :, :])
                 for i in range(arr.shape[0]):
-                    score,result = snippet_score(
+                    score, result = snippet_score(
                         model,
                         arr[i],
                         cfg=cfg,
@@ -188,11 +188,11 @@ if __name__ == "__main__":
         )
         # loss, y_pred = backprop(0, model, testD, testO, optimizer, scheduler, training=False)
         # Added
-        scores,test_rec_data = backprop(
+        scores, test_rec_data = backprop(
             0, model, testD, trainO, optimizer, scheduler, training=False, cfg=cfg
         )
         print("Calculate Training Data Score")
-        train_scores,train_rec_data = backprop(
+        train_scores, train_rec_data = backprop(
             0, model, train_dict, trainO, optimizer, scheduler, cfg, training=False
         )
 
@@ -210,7 +210,7 @@ if __name__ == "__main__":
     torch.save(train_rec_data, out_dir / "train_rec_data.pt")
 
     print("Save Score files Finished.")
-    
+
     # AUROC scoring
     print("AUROC Scoring by using DyAD method")
     all_snippet_df, dataframe, all_car_num_list, ind_car_num_list, ood_car_num_list = (
