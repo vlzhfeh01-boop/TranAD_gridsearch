@@ -108,3 +108,5 @@ model,brand,batch,dimff,val_auroc,log_path,config_path
 TranAD,1,32,8,0.795559,./results/gridsearch/tranad_1_batch32_dimff8.log,./configs/tranad_1_batch32_dimff8.json
 model,brand,batch,dimff,val_auroc,log_path,config_path
 TranAD,1,32,8,0.790174,./results/gridsearch/tranad_1_batch32_dimff8.log,./configs/tranad_1_batch32_dimff8.json
+model,brand,batch,dimff,val_auroc,log_path,config_path
+model,brand,batch,dimff,val_auroc,log_path,config_path
