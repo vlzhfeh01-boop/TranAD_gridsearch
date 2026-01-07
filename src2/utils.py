@@ -66,12 +66,7 @@ def snippet_score(
     tgt = src[-1, :, :].unsqueeze(0)
 
     # print(src.shape,tgt.shape)
-    out = model(src, tgt)
-
-    if isinstance(out, tuple):
-        x1, x2 = out
-    else:
-        x2 = out
+    x1,x2,_ = model(src, tgt)
 
     # 구현에 따라 x2가 shape가 (1,B,F)또는 (L,B,F)일 수 있음.
     """
@@ -234,11 +229,12 @@ def load_dataset(dataset, test=False):
     if not os.path.exists(folder):
         raise Exception("Processed Data not found.")
     loader = []
-    for file in ["train", "test", "labels", "train_labels"]:
+    for file in ["train", "test", "labels", "train_labels","mileage"]:
         loader.append(np.load(os.path.join(folder, f"{file}.npy"), allow_pickle=True))
     # loader = [i[:, debug:debug+1] for i in loader]
 
     train_loader = DataLoader(loader[0][:, :, :], batch_size=loader[0].shape[0])
+    mileage = loader[4]
     # timestamp 제외
 
     # test가 True이면, test data를 받아온다.
@@ -252,4 +248,4 @@ def load_dataset(dataset, test=False):
 
     train_labels = loader[3].item()
     # 전체 데이터를 데이터로터 타입으로 변환
-    return train_loader, test_loader, labels, train_data_dict, train_labels
+    return train_loader, test_loader, labels, train_data_dict, train_labels,mileage

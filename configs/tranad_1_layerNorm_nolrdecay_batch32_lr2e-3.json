@@ -24,14 +24,14 @@
         "loss_type": "smoothl1",
         "optimizer": {
             "type": "adamw",
-            "lr": 0.001,
+            "lr": 0.002,
             "weight_decay": 1e-05
         }
     },
     "scheduler": {
         "type": "steplr",
-        "step_size": 5,
-        "gamma": 0.9
+        "step_size": 10,
+        "gamma": 1.0
     },
     "scoring": {
         "reduce": "topk",

@@ -21,7 +21,7 @@ loaded_obj = train_obj + test_obj
 # print(loaded_obj)
 car_data, labels, mileage_data = sort_by_car(loaded_obj)
 # Add dx features
-car_data = add_dx_features(car_data)
+#car_data = add_dx_features(car_data)
 
 for k, v in labels.items():
     if v == 10:
@@ -40,7 +40,8 @@ print("abnormal car 수 :", len(abnormal_ids))
 
 
 # random seed (0)
-random.seed(0)
+# random seed change for test average AUROC
+random.seed(1)
 
 # train / test split
 # normal : 10 % test, 나머지 train
@@ -90,16 +91,16 @@ print("Test  label 분포:", Counter(test_labels.values()))
 
 # 1. train_data 기준으로 normalize feature 계산 (Dyad 기반)
 # mean_vals, std_vals = compute_mean_std(train_data)
-# min_vals, max_vals = compute_min_max(train_data)
+min_vals, max_vals = compute_min_max(train_data)
 # train_data_norm = normalize_dict(train_data, mean_vals, std_vals, max_vals, min_vals)
 # test_data_norm = normalize_dict(test_data, mean_vals, std_vals, max_vals, min_vals)
-# train_data_norm = minmax_normalize_dict(train_data, min_vals, max_vals)
-# test_data_norm = minmax_normalize_dict(test_data, min_vals, max_vals)
+train_data_norm = minmax_normalize_dict(train_data, min_vals, max_vals)
+test_data_norm = minmax_normalize_dict(test_data, min_vals, max_vals)
 
 # 2. train/test normalize (quantile min-max 방식)
-low_vals, high_vals = compute_min_max_quantile(train_data)
-train_data_norm = lowhigh_norm_dict_quantile(train_data, low_vals, high_vals)
-test_data_norm = lowhigh_norm_dict_quantile(test_data, low_vals, high_vals)
+#low_vals, high_vals = compute_min_max_quantile(train_data)
+#train_data_norm = lowhigh_norm_dict_quantile(train_data, low_vals, high_vals)
+#test_data_norm = lowhigh_norm_dict_quantile(test_data, low_vals, high_vals)
 
 # 3. z-normalize
 # mean_vals, std_vals = compute_mean_std(train_data)
@@ -125,7 +126,7 @@ mileage_snippets = (mileage_snippets - mileage_snippets.min()) / (
     mileage_snippets.max() - mileage_snippets.min()
 )
 print("Train_snippets shape : ", train_snippets.shape)
-print("Mileage_snippets shape : ", mileage_snippets)
+print("Mileage_snippets shape : ", mileage_snippets.shape)
 # Current Z-norm
 """
 test_snippets = {}
@@ -162,13 +163,24 @@ np.save(
 )
 
 np.save(
-    f"hilow_stats_brand{brand[brand_num]}.npy",
-    {"high": high_vals, "low": low_vals},
+    f"minmax_stats_brand{brand[brand_num]}.npy",
+    {"max": max_vals, "min": min_vals},
     allow_pickle=True,
 )
 
 np.save(
     f"train_brand{brand[brand_num]}_dict.npy",
     train_data_norm,
+    allow_pickle=True,
+)
+
+np.save(
+    f"mileage_brand{brand[brand_num]}.npy",
+    mileage_snippets,
+    allow_pickle=True,
+)
+np.save(
+    f"mileage_dict_brand{brand[brand_num]}.npy",
+    mileage_data,
     allow_pickle=True,
 )

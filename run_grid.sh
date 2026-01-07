@@ -10,7 +10,7 @@ NUM_EPOCHS=5                             # 고정 epoch
 
 # 튜닝할 값들
 BATCH_LIST=(32)
-dimff_LIST=(8)
+lr_LIST=(1e-3)
 
 mkdir -p "$RESULTS_DIR"
 
@@ -18,12 +18,12 @@ RESULT_CSV="$RESULTS_DIR/val_auroc_summary.csv"
 echo "model,brand,batch,dimff,val_auroc,log_path,config_path" >> "$RESULT_CSV"
 
 for w in "${BATCH_LIST[@]}"; do
-  for ld in "${dimff_LIST[@]}"; do
-    cfg_out="./configs/tranad_${BRAND}_batch${w}_dimff${ld}.json"
-    log_out="${RESULTS_DIR}/tranad_${BRAND}_batch${w}_dimff${ld}.log"
+  for ld in "${lr_LIST[@]}"; do
+    cfg_out="./configs/tranad_${BRAND}_layerNorm_nolrdecay_batch${w}_lr${ld}_seed1.json"
+    log_out="${RESULTS_DIR}/tranad_${BRAND}_layerNorm_nolrdecay_batch${w}_lr${ld}_seed1.log"
 
     echo "==============================================="
-    echo "Running: batch=${w}, dimff=${ld}"
+    echo "Running: batch=${w}, lr=${ld}"
     echo "Epochs: $NUM_EPOCHS"
     echo "Config: $cfg_out"
     echo "Log   : $log_out"
@@ -39,7 +39,7 @@ out_path  = "${cfg_out}"
 with open(base_path, "r") as f:
     cfg = json.load(f)
 
-cfg["model"]["dim_feedforward"] = ${ld}
+cfg["training"]["optimizer"]["lr"] = ${ld}
 cfg["training"]["batch_size"] = ${w}
 
 with open(out_path, "w") as f:

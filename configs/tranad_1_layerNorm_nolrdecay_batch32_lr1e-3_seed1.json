@@ -30,8 +30,8 @@
     },
     "scheduler": {
         "type": "steplr",
-        "step_size": 5,
-        "gamma": 0.9
+        "step_size": 10,
+        "gamma": 1.0
     },
     "scoring": {
         "reduce": "topk",

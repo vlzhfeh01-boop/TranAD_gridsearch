@@ -16,6 +16,7 @@ from pathlib import Path
 from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score
 from sklearn.metrics import roc_auc_score, roc_curve
 import matplotlib.pyplot as plt
+import torch.nn.functional as F
 
 
 def backprop(
@@ -43,13 +44,12 @@ def backprop(
                 optimizer.zero_grad()
                 batch_x = batch_x.to(device, non_blocking=True)
                 batch_m = batch_m.to(device, non_blocking=True)
-
                 batch = convert_to_windows_mod(batch_x, cfg, model)
 
                 B, N_win, L, F = (
                     batch.shape
                 )  # Batch size, Number of window, window length, Feature
-
+                m_target = batch_m.repeat_interleave(N_win).to(device) #(B*N_win,)
                 if count == 0:
                     print("batch.shape:", batch.shape, " w_size:", w_size)
                     count += 1
@@ -63,17 +63,21 @@ def backprop(
 
                 x1, x2, mileage_hat = model(src, tgt)  # return (x1,x2) or tensor
                 # mileage_hat shape보고 batch_m어떻게 바꿔야 할지 결정하기.
-
+                m_loss = reconstruction_loss(mileage_hat.squeeze(-1),m_target,loss_type="mse").mean()
                 # loss 설정 (rec loss + mileage loss)
 
                 # loss1 = mse(x1, tgt).mean()
                 # loss2 = mse(x2, tgt).mean()
                 loss1 = reconstruction_loss(x1, tgt, loss_type=loss_type).mean()
                 loss2 = reconstruction_loss(x2, tgt, loss_type=loss_type).mean()
-                w1 = 1 / n
-                w2 = max(1 - w1, 0.2)
-                loss = w1 * loss1 + w2 * loss2
 
+                w1 = 1 / n
+                w2 = max(1-w1,0.2)
+                s = w1+w2
+                loss = w1 * loss1 + w2 * loss2
+                # Modify mileage loss
+                loss = loss + 1e-4 * m_loss
+                
                 # backward
                 loss.backward()
                 optimizer.step()

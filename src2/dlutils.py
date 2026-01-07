@@ -218,14 +218,21 @@ class TransformerEncoderLayer(nn.Module):
         self.linear2 = nn.Linear(dim_feedforward, d_model)
         self.dropout1 = nn.Dropout(dropout)
         self.dropout2 = nn.Dropout(dropout)
+        # Layer Norm
+        self.norm1 = nn.LayerNorm(d_model)
+        self.norm2 = nn.LayerNorm(d_model)
+
 
         self.activation = nn.LeakyReLU(True)
 
     def forward(self, src,src_mask=None, src_key_padding_mask=None):
-        src2 = self.self_attn(src, src, src)[0]
-        src = src + self.dropout1(src2)
-        src2 = self.linear2(self.dropout(self.activation(self.linear1(src))))
-        src = src + self.dropout2(src2)
+        src_ln = self.norm1(src)
+        attn_out = self.self_attn(src_ln, src_ln, src_ln)[0]
+        src = src + self.dropout1(attn_out)
+
+        src_ln = self.norm2(src)
+        ffn_out = self.linear2(self.dropout(self.activation(self.linear1(src_ln))))
+        src = src + self.dropout2(ffn_out)
         return src
 
 class TransformerDecoderLayer(nn.Module):
@@ -239,16 +246,25 @@ class TransformerDecoderLayer(nn.Module):
         self.dropout1 = nn.Dropout(dropout)
         self.dropout2 = nn.Dropout(dropout)
         self.dropout3 = nn.Dropout(dropout)
+        # Layer Norm
+        self.norm1 = nn.LayerNorm(d_model)
+        self.norm2 = nn.LayerNorm(d_model)
+        self.norm3 = nn.LayerNorm(d_model)
 
         self.activation = nn.LeakyReLU(True)
 
     def forward(self, tgt, memory, tgt_mask=None, memory_mask=None, tgt_key_padding_mask=None, memory_key_padding_mask=None):
-        tgt2 = self.self_attn(tgt, tgt, tgt)[0]
-        tgt = tgt + self.dropout1(tgt2)
-        tgt2 = self.multihead_attn(tgt, memory, memory)[0]
-        tgt = tgt + self.dropout2(tgt2)
-        tgt2 = self.linear2(self.dropout(self.activation(self.linear1(tgt))))
-        tgt = tgt + self.dropout3(tgt2)
+        tgt_ln = self.norm1(tgt)
+        self_out = self.self_attn(tgt_ln, tgt_ln, tgt_ln)[0]
+        tgt = tgt + self.dropout1(self_out)
+
+        tgt_ln = self.norm2(tgt)
+        cross_out = self.multihead_attn(tgt_ln, memory, memory)[0]
+        tgt = tgt + self.dropout2(cross_out)
+
+        tgt_ln = self.norm3(tgt)
+        ffn_out = self.linear2(self.dropout(self.activation(self.linear1(tgt_ln))))
+        tgt = tgt + self.dropout3(ffn_out)
         return tgt
 
 class ComputeLoss:
