@@ -35,7 +35,7 @@
     },
     "scoring": {
         "reduce": "topk",
-        "k_ratio": 0.1,
+        "k_ratio": 0.05,
         "percentile_q": 90,
         "car_positive_ratio": 0.15
     }

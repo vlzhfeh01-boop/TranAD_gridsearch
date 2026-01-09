@@ -19,8 +19,8 @@ echo "model,brand,batch,dimff,val_auroc,log_path,config_path" >> "$RESULT_CSV"
 
 for w in "${BATCH_LIST[@]}"; do
   for ld in "${lr_LIST[@]}"; do
-    cfg_out="./configs/tranad_${BRAND}_layerNorm_nolrdecay_batch${w}_lr${ld}_seed1.json"
-    log_out="${RESULTS_DIR}/tranad_${BRAND}_layerNorm_nolrdecay_batch${w}_lr${ld}_seed1.log"
+    cfg_out="./configs/tranad_${BRAND}_layerNorm_nolrdecay_nomileage_batch${w}_lr${ld}.json"
+    log_out="${RESULTS_DIR}/tranad_${BRAND}_layerNorm_nolrdecay_nomileage_batch${w}_lr${ld}.log"
 
     echo "==============================================="
     echo "Running: batch=${w}, lr=${ld}"

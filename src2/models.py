@@ -101,10 +101,10 @@ class TranAD(nn.Module):
         tgt1, mem1 = self.encode(src, c, tgt)
 
         x1 = self.fcn(self.transformer_decoder1(tgt1,mem1))
-        h = mem1.mean(dim=0)
-        mileage_hat = self.mileage_head(h)
+        #h = mem1.mean(dim=0)
+        #mileage_hat = self.mileage_head(h)
         
         # Phase 2 - With anomaly scores
         c = (x1 - src) ** 2
         x2 = self.fcn(self.transformer_decoder2(*self.encode(src, c, tgt)))
-        return x1, x2, mileage_hat
+        return x1, x2 #, mileage_hat

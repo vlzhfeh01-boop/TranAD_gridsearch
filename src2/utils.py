@@ -63,10 +63,11 @@ def snippet_score(
     s = snippet.to(device=device, dtype=torch.float32)
     window = convert_to_windows(s, model, cfg)
     src = window.permute(1, 0, 2)
-    tgt = src[-1, :, :].unsqueeze(0)
+    #tgt = src[-1, :, :].unsqueeze(0)
+    tgt = src[-1,:,:].unsqueeze(0)
 
     # print(src.shape,tgt.shape)
-    x1,x2,_ = model(src, tgt)
+    x1,x2 = model(src, tgt)
 
     # 구현에 따라 x2가 shape가 (1,B,F)또는 (L,B,F)일 수 있음.
     """
@@ -75,21 +76,21 @@ def snippet_score(
     else:
         x2_last = x2
     """
-
     if x2.dim() == 3 and x2.shape[0] != 1:
         x2_last = x2[-1:, :, :]  # (1,B,F)
     else:
         x2_last = x2  # (1,B,F)
-
+    
+    
     # (1,B,F) -> (B,) 윈도우별 score
     res = reconstruction_loss(x2_last, tgt, loss_type=loss_type)  # (1,B,F)
-    err_f = res.squeeze(0)
-
+    err_f = res[:,:,:].squeeze(0)
+    
     # feature extraction
-    err_f = err_f[:, :]
 
     top3 = torch.topk(err_f, 3, dim=1).values
     score_w = top3.mean(dim=1)  # (B,)
+    score_w = score_w[:]
     # was : mean all features. now : top3 feature-mean
 
     B = score_w.numel()

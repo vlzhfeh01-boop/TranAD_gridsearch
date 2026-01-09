@@ -41,7 +41,7 @@ print("abnormal car 수 :", len(abnormal_ids))
 
 # random seed (0)
 # random seed change for test average AUROC
-random.seed(1)
+random.seed(0)
 
 # train / test split
 # normal : 10 % test, 나머지 train

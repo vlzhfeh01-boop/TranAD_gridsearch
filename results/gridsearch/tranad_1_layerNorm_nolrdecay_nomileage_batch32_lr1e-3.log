@@ -1,0 +1,15 @@
+/usr/lib/python3/dist-packages/scipy/__init__.py:146: UserWarning: A NumPy version >=1.17.3 and <1.25.0 is required for this version of SciPy (detected version 1.26.4
+  warnings.warn(f"A NumPy version >={np_minversion} and <{np_maxversion}"
+torch.Size([387594, 128, 8])
+<class 'dict'>
+<class 'dict'>
+[92mLoading pre-trained model: TranAD[0m
+[95mTraining TranAD on BAT[0m
+  0%|          | 0/5 [00:00<?, ?it/s]
+  0%|          | 0/12113 [00:00<?, ?it/s][A
+  0%|          | 1/12113 [00:00<1:19:04,  2.55it/s][A
+  0%|          | 3/12113 [00:00<35:09,  5.74it/s]  [A
+  0%|          | 5/12113 [00:00<27:17,  7.40it/s][A
+  0%|          | 7/12113 [00:00<24:02,  8.39it/s][A
+  0%|          | 9/12113 [00:01<22:20,  9.03it/s][A
+  0%|          | 11/12113 [00:01<21:26,  9.41it/s][A
