@@ -43,7 +43,7 @@ def convert_to_windows(data, model, cfg):
 
 
 def snippet_score(
-    model, snippet, cfg, L=10, device="cuda", reduce="topk", k_ratio=0.05, p=95
+    model, snippet, cfg, device="cuda", L=20, reduce="topk", k_ratio=0.05, p=95
 ):
     """
     하나의 스니펫(정규화된 (T,F))에 대한 anomaly score
@@ -52,58 +52,58 @@ def snippet_score(
       - "topk": 상위 k% 평균
       - "percentile": 지정 분위수
     """
-    model_device = next(model.parameters()).device
-    if device is None:
-        device = model_device
-    else :
-        device = torch.device(device)
-
     loss_type = cfg["training"]["loss_type"]
+    model.eval()
+    with torch.inference_mode():
+        window = convert_to_windows_mod(snippet, cfg, model)
+        B,N_win,L,F = window.shape
 
-    s = snippet.to(device=device, dtype=torch.float32)
-    window = convert_to_windows(s, model, cfg)
-    src = window.permute(1, 0, 2)
-    tgt = src[-1, :, :].unsqueeze(0)
+        #src = window.permute(2, 0, 1, 3).contiguous.view(L,-1,F)
+        win = window.reshape(B*N_win,L,F)
 
-    # print(src.shape,tgt.shape)
-    out = model(src, tgt)
+        src = win.permute(1,0,2).contiguous()
+        #tgt = src[-1, :, :].unsqueeze(0)
+        tgt = src[-1:].contiguous()
+    
+        # print(src.shape,tgt.shape)
+        out = model(src, tgt)
 
-    if isinstance(out, tuple):
-        x1, x2 = out
-    else:
-        x2 = out
+        if isinstance(out, tuple):
+            x1, x2 = out
+        else:
+            x2 = out
 
-    # 구현에 따라 x2가 shape가 (1,B,F)또는 (L,B,F)일 수 있음.
-    """
-    if x2.shape[0] != 1:
-        x2_last = x2[-1, :, :]
-    else:
-        x2_last = x2
-    """
-    if x2.dim() == 3 and x2.shape[0] != 1:
-        x2_last = x2[-1:, :, :]   # (1,B,F)
-    else:
-        x2_last = x2              # (1,B,F)
+        # 구현에 따라 x2가 shape가 (1,B,F)또는 (L,B,F)일 수 있음.
+        """
+        if x2.shape[0] != 1:
+            x2_last = x2[-1, :, :]
+        else:
+            x2_last = x2
+        """
+        if x2.dim() == 3 and x2.shape[0] != 1:
+            x2_last = x2[-1:, :, :]   # (1,B,F)
+        else:
+            x2_last = x2              # (1,B,F)
+    
+        # (1,B,F) -> (B,) 윈도우별 score
+        res = reconstruction_loss(x2_last, tgt, loss_type=loss_type)  # (1,B,F)
+        err_f = res.squeeze(0)
+        top3 = torch.topk(err_f,3,dim=1).values
+        score_w = top3.mean(dim=1)  # (B,)
+        # was : mean all features. now : top3 feature-mean
+        score_w = score_w.view(B,N_win)
+    
 
-    # (1,B,F) -> (B,) 윈도우별 score
-    res = reconstruction_loss(x2_last, tgt, loss_type=loss_type)  # (1,B,F)
-    err_f = res.squeeze(0)
-    top3 = torch.topk(err_f,3,dim=1).values
-    score_w = top3.mean(dim=1)  # (B,)
-    # was : mean all features. now : top3 feature-mean
-
-    B = score_w.numel()
-
-    if reduce == "mean":
-        return score_w.mean().item()
-    elif reduce == "topk":
-        k = max(1, int(B * k_ratio))
-        topk_vals, _ = torch.topk(score_w, k)
-        return topk_vals.mean().item()
-    elif reduce == "percentile":
-        return torch.quantile(score_w, p / 100).item()
-    else:  # max
-        return score_w.max().item()
+        if reduce == "mean":
+            return score_w.mean().item()
+        elif reduce == "topk":
+            k = max(1, int(N_win * k_ratio))
+            topk_vals = torch.topk(score_w, k,dim=1).values.mean(dim=1)
+            return topk_vals
+        elif reduce == "percentile":
+            return torch.quantile(score_w, p / 100).item()
+        else:  # max
+            return score_w.max().item()
 
 
 def fit_threshold(
@@ -123,7 +123,7 @@ def convert_to_windows_mod(data, cfg, model="TranAD"):
     # print(data.shape)
     for X in data:
         window = []
-        w_size = model.n_window  # 10
+        w_size = cfg["model"]["n_window"]  # 10
         for i, g in enumerate(X):
             if i >= w_size:
                 w = X[i - w_size : i]
@@ -164,12 +164,12 @@ def load_model(modelname,device, dims, args, cfg):
         raise ValueError(f"Unsupported optimizer type: {opt_type}")
 
     # Scheduler
-    sch_cfg = cfg.get("training", {}).get("scheduler", {})
+    sch_cfg = cfg.get("scheduler", {})
     sch_type = sch_cfg.get("type", "steplr").lower()
 
     if sch_type == "steplr":
         step_size = sch_cfg.get("step_size", 5)
-        gamma = sch_cfg.get("gamma", 0.9)
+        gamma = sch_cfg.get("gamma", 1.0)
         scheduler = torch.optim.lr_scheduler.StepLR(
             optimizer,
             step_size=step_size,

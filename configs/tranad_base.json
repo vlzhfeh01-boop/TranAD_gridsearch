@@ -19,7 +19,7 @@
         "num_decoder_layers": 1
     },
     "training" : {
-        "num_epochs" : 5,
+        "num_epochs" : 15,
         "batch_size" : 32,
         "loss_type" : "smoothl1",
         "optimizer" : {
@@ -29,7 +29,7 @@
         }
     },
     "scheduler" : {
-        "type" : "cosine",
+        "type" : "steplr",
         "step_size" : 5,
         "gamma" : 0.9
     },

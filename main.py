@@ -89,22 +89,24 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, cfg, training=True
             reduce_mode = cfg["scoring"]["reduce"]
             k_ratio = cfg["scoring"]["k_ratio"]
             car_p = cfg["scoring"]["car_positive_ratio"]
-            
+            batch_size = cfg["training"]["batch_size"]
             # Changed mainly
             car_scores = {}
             for cid, arr in tqdm(data.items()):
                 scores = []
-                arr = torch.as_tensor(arr[:, :, :])
-                for i in range(arr.shape[0]):
+                arr = torch.as_tensor(arr,dtype=torch.float32,device=device)
+                dataloader = DataLoader(arr,batch_size=batch_size,shuffle=False)
+                for batch in dataloader:
                     score = snippet_score(
                         model,
-                        arr[i],
+                        batch,
                         cfg=cfg,
+                        device=device,
                         reduce=reduce_mode,
                         k_ratio=k_ratio,
                         p=car_p,
                     )
-                    scores.append(score)
+                    scores.extend(score.detach().cpu().tolist())
                 car_scores[cid] = scores
             return car_scores
 
@@ -172,22 +174,19 @@ if __name__ == "__main__":
         # plot_accuracies(accuracy_list, f"{args.model}_{args.dataset}")
 
     ### Testing phase
-    optimizer.zero_grad()
-    model.eval()  # eval이기때문에 grad계산 X
-    with torch.no_grad():
 
-        print(
-            f"{color.HEADER}Testing {cfg['model']['name']} on {cfg['data']['dataset']}{color.ENDC}"
+    print(
+        f"{color.HEADER}Testing {cfg['model']['name']} on {cfg['data']['dataset']}{color.ENDC}"
         )
         # loss, y_pred = backprop(0, model, testD, testO, optimizer, scheduler, training=False)
         # Added
-        scores = backprop(
-            0, model, testD, trainO, optimizer, scheduler, training=False, cfg=cfg
-        )
-        print("Calculate Training Data Score")
-        train_scores = backprop(
-            0, model, train_dict, trainO, optimizer, scheduler, cfg, training=False
-        )
+    scores = backprop(
+        0, model, testD, trainO, optimizer, scheduler, training=False, cfg=cfg
+    )
+    print("Calculate Training Data Score")
+    train_scores = backprop(
+        0, model, train_dict, trainO, optimizer, scheduler, cfg, training=False
+    )
 
     print("Save Score Files")
     config_path = Path(args.config)
