@@ -18,7 +18,18 @@ from sklearn.metrics import roc_auc_score, roc_curve
 import matplotlib.pyplot as plt
 
 
-def backprop(epoch, model, data, dataO, optimizer, scheduler, cfg, training=True):
+def backprop(
+    epoch,
+    model,
+    data,
+    testD,
+    train_dict_D,
+    dataO,
+    optimizer,
+    scheduler,
+    cfg,
+    training=True,
+):
     feats = dataO.shape[1]
     # Added
     # TranAD Shape = (N,128,10,8)
@@ -80,8 +91,10 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, cfg, training=True
 
                 total_loss += loss.item()
                 count += 1
-
-            scheduler.step()
+            mean_auc = computeLoss(
+                model, data, testD, train_dict_D, trainO, optimizer, scheduler, cfg
+            )
+            scheduler.step(mean_auc)
             avg_loss = total_loss / max(1, count)
             tqdm.write(f"Epoch {epoch},\tL1 = {total_loss / max(1, count)}")
             return avg_loss, optimizer.param_groups[0]["lr"]
@@ -94,8 +107,8 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, cfg, training=True
             car_scores = {}
             for cid, arr in tqdm(data.items()):
                 scores = []
-                arr = torch.as_tensor(arr,dtype=torch.float32,device=device)
-                dataloader = DataLoader(arr,batch_size=batch_size,shuffle=False)
+                arr = torch.as_tensor(arr, dtype=torch.float32, device=device)
+                dataloader = DataLoader(arr, batch_size=batch_size, shuffle=False)
                 for batch in dataloader:
                     score = snippet_score(
                         model,
@@ -109,6 +122,39 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, cfg, training=True
                     scores.extend(score.detach().cpu().tolist())
                 car_scores[cid] = scores
             return car_scores
+
+
+def computeLoss(model, data, testD, train_dict_D, trainO, optimizer, scheduler, cfg):
+    print(
+        f"{color.HEADER}Testing {cfg['model']['name']} on {cfg['data']['dataset']}{color.ENDC}"
+    )
+    scores = backprop(
+        0,
+        model,
+        testD,
+        data,
+        train_dict_D,
+        trainO,
+        optimizer,
+        scheduler,
+        training=False,
+        cfg=cfg,
+    )
+    print("Calculate Training Data Score")
+    train_scores = backprop(
+        0,
+        model,
+        train_dict_D,
+        data,
+        testD,
+        trainO,
+        optimizer,
+        scheduler,
+        cfg,
+        training=False,
+    )
+    mean_auc = fiveFold_AUROC(train_scores, scores, train_labels, labels)
+    return mean_auc
 
 
 if __name__ == "__main__":
@@ -157,7 +203,16 @@ if __name__ == "__main__":
         for e in tqdm(list(range(epoch + 1, epoch + num_epochs + 1))):
 
             lossT, lr = backprop(
-                e, model, s, trainO, optimizer, scheduler, cfg, training=True
+                e,
+                model,
+                s,
+                testD,
+                train_dict,
+                trainO,
+                optimizer,
+                scheduler,
+                cfg,
+                training=True,
             )
 
             accuracy_list.append((lossT, lr))
@@ -177,15 +232,33 @@ if __name__ == "__main__":
 
     print(
         f"{color.HEADER}Testing {cfg['model']['name']} on {cfg['data']['dataset']}{color.ENDC}"
-        )
-        # loss, y_pred = backprop(0, model, testD, testO, optimizer, scheduler, training=False)
-        # Added
+    )
+    # loss, y_pred = backprop(0, model, testD, testO, optimizer, scheduler, training=False)
+    # Added
     scores = backprop(
-        0, model, testD, trainO, optimizer, scheduler, training=False, cfg=cfg
+        0,
+        model,
+        testD,
+        trainD,
+        train_dict,
+        trainO,
+        optimizer,
+        scheduler,
+        training=False,
+        cfg=cfg,
     )
     print("Calculate Training Data Score")
     train_scores = backprop(
-        0, model, train_dict, trainO, optimizer, scheduler, cfg, training=False
+        0,
+        model,
+        train_dict,
+        testD,
+        trainD,
+        trainO,
+        optimizer,
+        scheduler,
+        cfg,
+        training=False,
     )
 
     print("Save Score Files")
@@ -200,111 +273,6 @@ if __name__ == "__main__":
     np.save(out_dir / "train_scores.npy", train_scores, allow_pickle=True)
 
     print("Save Score files Finished.")
-    
-    # AUROC scoring
-    print("AUROC Scoring by using DyAD method")
-    all_snippet_df, dataframe, all_car_num_list, ind_car_num_list, ood_car_num_list = (
-        merge_scores(train_scores, scores, train_labels, labels)
-    )
 
-    mean_fpr = np.linspace(0, 1, 100)
-    tprs = []
-    AUC_fivefold_list = []
-
-    for i in range(5):
-
-        fold_num = i
-        test_car_list = (
-            ind_car_num_list[
-                int(fold_num * len(ind_car_num_list) / 5) : int(
-                    (fold_num + 1) * len(ind_car_num_list) / 5
-                )
-            ]
-            + ood_car_num_list[: int(fold_num * len(ood_car_num_list) / 5)]
-            + ood_car_num_list[int((fold_num + 1) * len(ood_car_num_list) / 5) :]
-        )
-        test_car_list = set(test_car_list)
-        train_car_list = set(all_car_num_list - test_car_list)
-
-        # ------------------------------
-        # Train part: threshold_n, best_h 튜닝
-        # ------------------------------
-        train_result = all_snippet_df[all_snippet_df["car"].isin(train_car_list)].copy()
-        test_result = all_snippet_df[all_snippet_df["car"].isin(test_car_list)].copy()
-
-        train_res_csv = train_result[["label", "car", "rec_error"]].to_numpy()
-        test_res_csv = test_result[["label", "car", "rec_error"]].to_numpy()
-
-        rec_sorted_index = np.argsort(
-            -train_res_csv[:, 2].astype(float)
-        )  # 정렬한 인덱스 반환
-        res = [
-            train_res_csv[j][[1, 0, 2]] for j in rec_sorted_index
-        ]  # [car, label, rec_error]
-        result = pd.DataFrame(res, columns=["car", "label", "rec_error"])
-
-        best_n, max_percent, granularity = find_best_percent(
-            result, granularity_all=1000
-        )
-        head_n = best_n / granularity
-        data_length = round(len(result) * head_n)
-        # threshold_n : precision이 최대가 되는 지점의 임계값.
-        threshold_n = result["rec_error"].values[data_length - 1].astype(float)
-
-        print("threshold_n", threshold_n)
-        print("start tuning, flag is", "rec_error")
-        best_result, best_h, best_re, best_fa, best_f1, best_auroc = find_best_result(
-            threshold_n, result, dataframe, ind_car_num_list, ood_car_num_list
-        )
-        if dataframe.shape[0] != best_result.shape[0]:
-            print(
-                "dataframe_std is ",
-                dataframe.shape[0],
-                "&&   dataframe is ",
-                best_result.shape[0],
-            )
-
-        print("F1 Scores through Train data")
-        print("best 1000 / %d:" % best_h)
-        print("re:", best_re)
-        print("fa:", best_fa)
-        print("F1:", best_f1)
-
-        # ------------------------------
-        # Test part: charge_to_car → car-level score / 예측
-        # ------------------------------
-        rec_sorted_index = np.argsort(-test_res_csv[:, 2].astype(float))
-        res = [test_res_csv[j][[1, 0, 2]] for j in rec_sorted_index]
-        result = pd.DataFrame(res, columns=["car", "label", "rec_error"])
-        result["car"] = result["car"].astype("int").astype("str")
-
-        test_result_car = charge_to_car(threshold_n, result, head_n=best_h)
-        # columns: ['car', 'predict', 'error', 'threshold_n']
-
-        _score = list(test_result_car["error"])
-        y_true = []
-        for each_car in test_result_car["car"]:
-            if int(each_car) in ind_car_num_list:
-                y_true.append(0)
-            if int(each_car) in ood_car_num_list:
-                y_true.append(1)
-        y_pred = list(
-            test_result_car["predict"]
-        )  # charge_to_car에서 0/1로 만들어 둔 것
-
-        print("len(_score)", len(_score))
-        fpr, tpr, thresholds = metrics.roc_curve(y_true, _score, pos_label=1)
-        auc_fold = auc(fpr, tpr)
-        print("AUC", auc_fold)
-        AUC_fivefold_list.append(auc_fold)
-        # np.save(f"/results/true_score_fold{i}.npy",y_true)
-        # np.save(f"/results/pred_score_fold{i}.npy",_score)
-
-    # ------------------------------
-    # 5-fold 평균 ROC + 표준편차 밴드
-    # ------------------------------
-
-    print("Fold AUCs:", AUC_fivefold_list)
-    mean_auc = np.mean(AUC_fivefold_list)
-    print("AUC mean ", mean_auc)
+    mean_auc = fiveFold_AUROC(train_scores, scores, train_labels, labels)
     print(f"AUROC={mean_auc:.6f}")

@@ -51,7 +51,9 @@ def count_entries(df, col_name):
     return count_dist
 
 
-def find_best_result(threshold_n, result, dataframe_std,ind_car_num_list,ood_car_num_list):
+def find_best_result(
+    threshold_n, result, dataframe_std, ind_car_num_list, ood_car_num_list
+):
     """
     find_best_result
     :param threshold_n: threshold
@@ -63,7 +65,7 @@ def find_best_result(threshold_n, result, dataframe_std,ind_car_num_list,ood_car
     for h in tqdm(range(10, 1000, 5)):
         train_result = charge_to_car(threshold_n, result, head_n=h)
         f1, recall, false_rate, precision, accuracy, auroc = evaluation(
-            dataframe_std, train_result,ind_car_num_list,ood_car_num_list
+            dataframe_std, train_result, ind_car_num_list, ood_car_num_list
         )
         if auroc >= best_auroc:
             best_f1 = f1
@@ -99,7 +101,7 @@ def charge_to_car(threshold_n, rec_result, head_n=92):
     return pd.DataFrame(result, columns=["car", "predict", "error", "threshold_n"])
 
 
-def evaluation(dataframe_std, dataframe,ind_car_num_list,ood_car_num_list):
+def evaluation(dataframe_std, dataframe, ind_car_num_list, ood_car_num_list):
     """
     calculated statistics
     :param dataframe_std:
@@ -180,3 +182,114 @@ def merge_scores(train_scores, test_scores, train_label_obj, test_label_obj):
         ind_car_num_list,
         ood_car_num_list,
     )
+
+
+def fiveFold_AUROC(train_scores, scores, train_labels, labels):
+    # AUROC scoring
+    print("AUROC Scoring by using DyAD method")
+    all_snippet_df, dataframe, all_car_num_list, ind_car_num_list, ood_car_num_list = (
+        merge_scores(train_scores, scores, train_labels, labels)
+    )
+
+    mean_fpr = np.linspace(0, 1, 100)
+    tprs = []
+    AUC_fivefold_list = []
+
+    for i in range(5):
+
+        fold_num = i
+        test_car_list = (
+            ind_car_num_list[
+                int(fold_num * len(ind_car_num_list) / 5) : int(
+                    (fold_num + 1) * len(ind_car_num_list) / 5
+                )
+            ]
+            + ood_car_num_list[: int(fold_num * len(ood_car_num_list) / 5)]
+            + ood_car_num_list[int((fold_num + 1) * len(ood_car_num_list) / 5) :]
+        )
+        test_car_list = set(test_car_list)
+        train_car_list = set(all_car_num_list - test_car_list)
+
+        # ------------------------------
+        # Train part: threshold_n, best_h 튜닝
+        # ------------------------------
+        train_result = all_snippet_df[all_snippet_df["car"].isin(train_car_list)].copy()
+        test_result = all_snippet_df[all_snippet_df["car"].isin(test_car_list)].copy()
+
+        train_res_csv = train_result[["label", "car", "rec_error"]].to_numpy()
+        test_res_csv = test_result[["label", "car", "rec_error"]].to_numpy()
+
+        rec_sorted_index = np.argsort(
+            -train_res_csv[:, 2].astype(float)
+        )  # 정렬한 인덱스 반환
+        res = [
+            train_res_csv[j][[1, 0, 2]] for j in rec_sorted_index
+        ]  # [car, label, rec_error]
+        result = pd.DataFrame(res, columns=["car", "label", "rec_error"])
+
+        best_n, max_percent, granularity = find_best_percent(
+            result, granularity_all=1000
+        )
+        head_n = best_n / granularity
+        data_length = round(len(result) * head_n)
+        # threshold_n : precision이 최대가 되는 지점의 임계값.
+        threshold_n = result["rec_error"].values[data_length - 1].astype(float)
+
+        print("threshold_n", threshold_n)
+        print("start tuning, flag is", "rec_error")
+        best_result, best_h, best_re, best_fa, best_f1, best_auroc = find_best_result(
+            threshold_n, result, dataframe, ind_car_num_list, ood_car_num_list
+        )
+        if dataframe.shape[0] != best_result.shape[0]:
+            print(
+                "dataframe_std is ",
+                dataframe.shape[0],
+                "&&   dataframe is ",
+                best_result.shape[0],
+            )
+
+        print("F1 Scores through Train data")
+        print("best 1000 / %d:" % best_h)
+        print("re:", best_re)
+        print("fa:", best_fa)
+        print("F1:", best_f1)
+
+        # ------------------------------
+        # Test part: charge_to_car → car-level score / 예측
+        # ------------------------------
+        rec_sorted_index = np.argsort(-test_res_csv[:, 2].astype(float))
+        res = [test_res_csv[j][[1, 0, 2]] for j in rec_sorted_index]
+        result = pd.DataFrame(res, columns=["car", "label", "rec_error"])
+        result["car"] = result["car"].astype("int").astype("str")
+
+        test_result_car = charge_to_car(threshold_n, result, head_n=best_h)
+        # columns: ['car', 'predict', 'error', 'threshold_n']
+
+        _score = list(test_result_car["error"])
+        y_true = []
+        for each_car in test_result_car["car"]:
+            if int(each_car) in ind_car_num_list:
+                y_true.append(0)
+            if int(each_car) in ood_car_num_list:
+                y_true.append(1)
+        y_pred = list(
+            test_result_car["predict"]
+        )  # charge_to_car에서 0/1로 만들어 둔 것
+
+        print("len(_score)", len(_score))
+        fpr, tpr, thresholds = metrics.roc_curve(y_true, _score, pos_label=1)
+        auc_fold = auc(fpr, tpr)
+        print("AUC", auc_fold)
+        AUC_fivefold_list.append(auc_fold)
+        # np.save(f"/results/true_score_fold{i}.npy",y_true)
+        # np.save(f"/results/pred_score_fold{i}.npy",_score)
+
+    # ------------------------------
+    # 5-fold 평균 ROC + 표준편차 밴드
+    # ------------------------------
+
+    print("Fold AUCs:", AUC_fivefold_list)
+    mean_auc = np.mean(AUC_fivefold_list)
+    print("AUC mean ", mean_auc)
+
+    return mean_auc

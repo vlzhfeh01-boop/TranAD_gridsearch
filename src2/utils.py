@@ -56,15 +56,15 @@ def snippet_score(
     model.eval()
     with torch.inference_mode():
         window = convert_to_windows_mod(snippet, cfg, model)
-        B,N_win,L,F = window.shape
+        B, N_win, L, F = window.shape
 
-        #src = window.permute(2, 0, 1, 3).contiguous.view(L,-1,F)
-        win = window.reshape(B*N_win,L,F)
+        # src = window.permute(2, 0, 1, 3).contiguous.view(L,-1,F)
+        win = window.reshape(B * N_win, L, F)
 
-        src = win.permute(1,0,2).contiguous()
-        #tgt = src[-1, :, :].unsqueeze(0)
+        src = win.permute(1, 0, 2).contiguous()
+        # tgt = src[-1, :, :].unsqueeze(0)
         tgt = src[-1:].contiguous()
-    
+
         # print(src.shape,tgt.shape)
         out = model(src, tgt)
 
@@ -81,24 +81,23 @@ def snippet_score(
             x2_last = x2
         """
         if x2.dim() == 3 and x2.shape[0] != 1:
-            x2_last = x2[-1:, :, :]   # (1,B,F)
+            x2_last = x2[-1:, :, :]  # (1,B,F)
         else:
-            x2_last = x2              # (1,B,F)
-    
+            x2_last = x2  # (1,B,F)
+
         # (1,B,F) -> (B,) 윈도우별 score
         res = reconstruction_loss(x2_last, tgt, loss_type=loss_type)  # (1,B,F)
         err_f = res.squeeze(0)
-        top3 = torch.topk(err_f,3,dim=1).values
+        top3 = torch.topk(err_f, 3, dim=1).values
         score_w = top3.mean(dim=1)  # (B,)
         # was : mean all features. now : top3 feature-mean
-        score_w = score_w.view(B,N_win)
-    
+        score_w = score_w.view(B, N_win)
 
         if reduce == "mean":
             return score_w.mean().item()
         elif reduce == "topk":
             k = max(1, int(N_win * k_ratio))
-            topk_vals = torch.topk(score_w, k,dim=1).values.mean(dim=1)
+            topk_vals = torch.topk(score_w, k, dim=1).values.mean(dim=1)
             return topk_vals
         elif reduce == "percentile":
             return torch.quantile(score_w, p / 100).item()
@@ -135,9 +134,9 @@ def convert_to_windows_mod(data, cfg, model="TranAD"):
     return torch.stack(windows, dim=0)
 
 
-def load_model(modelname,device, dims, args, cfg):
+def load_model(modelname, device, dims, args, cfg):
     import src2.models
-    
+
     model_class = getattr(src2.models, modelname)
     model = model_class(dims, cfg).float()
     model = model.to(device).float()
@@ -177,8 +176,11 @@ def load_model(modelname,device, dims, args, cfg):
         )
     elif sch_type == "cosine":
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-            optimizer,
-            cfg["training"]["num_epochs"]
+            optimizer, cfg["training"]["num_epochs"]
+        )
+    elif sch_type == "steplrplateau":
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer, mode="max", factor=0.9, patience=2, min_lr=1e-6
         )
     elif sch_type == "none":
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=1.0)
@@ -235,11 +237,11 @@ def load_dataset(dataset, test=False):
     # loader = [i[:, debug:debug+1] for i in loader]
 
     train_loader = DataLoader(loader[0][:, :, :], batch_size=loader[0].shape[0])
-    #timestamp 제외
-    
+    # timestamp 제외
+
     # test가 True이면, test data를 받아온다.
     test_loader = loader[1].item()
-    
+
     labels = loader[2].item()
 
     train_data_dict = np.load(
