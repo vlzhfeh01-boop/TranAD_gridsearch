@@ -1,7 +1,7 @@
 import pandas as pd
 from tqdm import tqdm
 from torch.utils.data import Dataset, DataLoader, TensorDataset
-from time import time
+import time
 from pprint import pprint
 from src2.utils import *
 from src2.parser import *
@@ -43,17 +43,27 @@ def backprop(
             count = 0
             data_x = torch.as_tensor(data, dtype=torch.float32)
 
+            #data_x = convert_to_windows_mod(data_x,cfg)
+
+            #print("Nan : ", torch.isnan(data_x).any())
+            #print("Inf : ",torch.isinf(data_x).any())
+            #print(" std : ",data_x.std())
+            #print("std per feature : ", data_x.std(dim=2))
+            #print("min/max per feature : ", data_x.min(dim=2),data_x.max(dim=2))
+
             batch_size = cfg["training"]["batch_size"]
             loss_type = cfg["training"]["loss_type"]
-            dataloader = DataLoader(data_x, shuffle=True, batch_size=batch_size)
+            dataloader = DataLoader(data_x, shuffle=True, batch_size=batch_size,num_workers=4,pin_memory=True,persistent_workers=True)
             count = 0
             for batch in tqdm(dataloader):
+
                 optimizer.zero_grad()
                 batch = batch.to(device, non_blocking=True)
 
                 batch = convert_to_windows_mod(batch, cfg, model)
-
-                B, N_win, L, F = (
+                #batch = convert_to_windows_unfold(batch, cfg)
+                
+                B, T, L, F = (
                     batch.shape
                 )  # Batch size, Number of window, window length, Feature
 
@@ -62,13 +72,16 @@ def backprop(
                     count += 1
 
                 src = (
-                    batch.permute(2, 0, 1, 3).contiguous().view(w_size, -1, F)
+                    batch.permute(2, 0, 1, 3).reshape(L,B*T,F)
                 )  # (10,128,8)
 
                 tgt = src[-1, :, :].unsqueeze(0)
                 # forward per one snippet
-
                 out = model(src, tgt)  # return (x1,x2) or tensor
+                
+
+                #print("batch device:", batch.device)
+                #print("model device:", next(model.parameters()).device)
 
                 # loss 설정
                 if isinstance(out, tuple):
@@ -91,10 +104,10 @@ def backprop(
 
                 total_loss += loss.item()
                 count += 1
-            mean_auc = computeLoss(
-                model, data, testD, train_dict_D, trainO, optimizer, scheduler, cfg
-            )
-            scheduler.step(mean_auc)
+            # test data AUROC compute
+            #mean_auc = computeLoss(model, data, testD, train_dict_D, trainO, optimizer, scheduler, cfg)
+
+            scheduler.step()
             avg_loss = total_loss / max(1, count)
             tqdm.write(f"Epoch {epoch},\tL1 = {total_loss / max(1, count)}")
             return avg_loss, optimizer.param_groups[0]["lr"]
@@ -105,12 +118,14 @@ def backprop(
             batch_size = cfg["training"]["batch_size"]
             # Changed mainly
             car_scores = {}
+            car_reconstruction_data = {}
             for cid, arr in tqdm(data.items()):
                 scores = []
+                result_data=[]
                 arr = torch.as_tensor(arr, dtype=torch.float32, device=device)
-                dataloader = DataLoader(arr, batch_size=batch_size, shuffle=False)
+                dataloader = DataLoader(arr, batch_size=batch_size, shuffle=False,num_workers=0,pin_memory=True)
                 for batch in dataloader:
-                    score = snippet_score(
+                    score,result = snippet_score(
                         model,
                         batch,
                         cfg=cfg,
@@ -119,9 +134,11 @@ def backprop(
                         k_ratio=k_ratio,
                         p=car_p,
                     )
+                    result_data.extend(result)
                     scores.extend(score.detach().cpu().tolist())
                 car_scores[cid] = scores
-            return car_scores
+                car_reconstruction_data[cid] = result_data
+            return car_scores,car_reconstruction_data
 
 
 def computeLoss(model, data, testD, train_dict_D, trainO, optimizer, scheduler, cfg):
@@ -137,8 +154,8 @@ def computeLoss(model, data, testD, train_dict_D, trainO, optimizer, scheduler, 
         trainO,
         optimizer,
         scheduler,
+        cfg,
         training=False,
-        cfg=cfg,
     )
     print("Calculate Training Data Score")
     train_scores = backprop(
@@ -179,6 +196,7 @@ if __name__ == "__main__":
     trainO = trainD
     testD = test_loader
     testO = testD
+    print("trainD device:", getattr(trainD, "device", None))
 
     print(trainO.shape)
     print(type(testO))
@@ -199,7 +217,7 @@ if __name__ == "__main__":
         num_epochs = cfg["training"]["num_epochs"]
 
         s = trainD
-        start = time()
+        start = time.time()
         for e in tqdm(list(range(epoch + 1, epoch + num_epochs + 1))):
 
             lossT, lr = backprop(
@@ -235,7 +253,7 @@ if __name__ == "__main__":
     )
     # loss, y_pred = backprop(0, model, testD, testO, optimizer, scheduler, training=False)
     # Added
-    scores = backprop(
+    scores, test_rec_data = backprop(
         0,
         model,
         testD,
@@ -248,7 +266,7 @@ if __name__ == "__main__":
         cfg=cfg,
     )
     print("Calculate Training Data Score")
-    train_scores = backprop(
+    train_scores, train_rec_data = backprop(
         0,
         model,
         train_dict,
@@ -270,7 +288,9 @@ if __name__ == "__main__":
 
     prefix = "test"
     np.save(out_dir / f"{prefix}_scores.npy", scores, allow_pickle=True)
+    torch.save(test_rec_data, out_dir / f"{prefix}_rec_data.pt")
     np.save(out_dir / "train_scores.npy", train_scores, allow_pickle=True)
+    torch.save(train_rec_data, out_dir / "train_rec_data.pt")
 
     print("Save Score files Finished.")
 

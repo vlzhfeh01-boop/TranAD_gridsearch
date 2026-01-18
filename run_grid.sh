@@ -5,8 +5,8 @@ BASE_CONFIG="./configs/tranad_base.json"   # 템플릿 config
 RESULTS_DIR="./results/gridsearch"        # 로그/결과 저장 폴더
 DATASET="BAT"                  # --dataset 인자
 MODEL="TranAD"                            # --model 인자
-BRAND=1                         #brand num
-NUM_EPOCHS=15                             # 고정 epoch
+BRAND="13"                         #brand num
+NUM_EPOCHS=5                             # 고정 epoch
 
 # 튜닝할 값들
 BATCH_LIST=(32)
@@ -19,8 +19,8 @@ echo "model,brand,batch,dimff,val_auroc,log_path,config_path" >> "$RESULT_CSV"
 
 for w in "${BATCH_LIST[@]}"; do
   for ld in "${dimff_LIST[@]}"; do
-    cfg_out="./configs/tranad_${BRAND}_batch${w}_dimff${ld}_gamma1_epoch15.json"
-    log_out="${RESULTS_DIR}/tranad_${BRAND}_batch${w}_dimff${ld}_gamma1_epoch15.log"
+    cfg_out="./configs/tranad_${BRAND}_batch${w}_dimff${ld}_epoch${NUM_EPOCHS}.json"
+    log_out="${RESULTS_DIR}/tranad_${BRAND}_batch${w}_dimff${ld}_epoch${NUM_EPOCHS}.log"
 
     echo "==============================================="
     echo "Running: batch=${w}, dimff=${ld}"

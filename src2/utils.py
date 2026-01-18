@@ -57,7 +57,6 @@ def snippet_score(
     with torch.inference_mode():
         window = convert_to_windows_mod(snippet, cfg, model)
         B, N_win, L, F = window.shape
-
         # src = window.permute(2, 0, 1, 3).contiguous.view(L,-1,F)
         win = window.reshape(B * N_win, L, F)
 
@@ -98,7 +97,7 @@ def snippet_score(
         elif reduce == "topk":
             k = max(1, int(N_win * k_ratio))
             topk_vals = torch.topk(score_w, k, dim=1).values.mean(dim=1)
-            return topk_vals
+            return topk_vals, x2_last.squeeze(0).reshape(B,N_win,F)
         elif reduce == "percentile":
             return torch.quantile(score_w, p / 100).item()
         else:  # max
@@ -132,6 +131,25 @@ def convert_to_windows_mod(data, cfg, model="TranAD"):
         window_tensor = torch.stack(window, dim=0)
         windows.append(window_tensor)
     return torch.stack(windows, dim=0)
+
+def convert_to_windows_unfold(data, cfg):
+    """
+    data: (B, T, F)
+    returns: (B, T, w_size, F)  # same semantics as your convert_to_windows_mod
+    """
+    w_size = cfg["model"]["n_window"]
+    B, T, F = data.shape
+
+    # left padding with X[0] repeated (w_size-1) times
+    first = data[:, :1, :]                                  # (B, 1, F)
+    pad = first.expand(B, w_size - 1, F)                    # (B, w_size-1, F) view (no copy)
+    xpad = torch.cat([pad, data], dim=1)                    # (B, T+w_size-1, F)
+
+    # unfold over time dimension to get windows of length w_size with step 1
+    # result: (B, T, w_size, F)
+    win = xpad.unfold(dimension=1, size=w_size, step=1)
+
+    return win
 
 
 def load_model(modelname, device, dims, args, cfg):
@@ -179,8 +197,9 @@ def load_model(modelname, device, dims, args, cfg):
             optimizer, cfg["training"]["num_epochs"]
         )
     elif sch_type == "steplrplateau":
+        print("You Choose ",sch_type)
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            optimizer, mode="max", factor=0.9, patience=2, min_lr=1e-6
+            optimizer, mode="max", factor=0.9, patience=1, min_lr=1e-6,verbose=True
         )
     elif sch_type == "none":
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=1.0)

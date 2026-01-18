@@ -7,13 +7,18 @@ import random
 from processdata.utils import *
 
 
-brand = [0, 1, 2, 3]
-brand_num = 1  # change this number
-
+brand = [1, 3]
+loaded_obj = []
 # brand1/2
-test_obj = glob(f"./data/battery_brand{brand[brand_num]}/test/*.pkl")
-train_obj = glob(f"./data/battery_brand{brand[brand_num]}/train/*.pkl")
-loaded_obj = train_obj + test_obj
+for brand_num in brand:
+    if brand_num==3:
+        obj = glob(f"./data/battery_brand{brand_num}/data/*.pkl")
+        temp_obj = obj
+    else : 
+        train_obj = glob(f"./data/battery_brand{brand_num}/train/*.pkl")
+        test_obj = glob(f"./data/battery_brand{brand_num}/test/*.pkl")
+        temp_obj = train_obj+test_obj
+    loaded_obj += temp_obj
 
 # brand3
 # loaded_obj = glob("./data/battery_brand3/data/*.pkl")
@@ -89,10 +94,10 @@ print("Test  label 분포:", Counter(test_labels.values()))
 # 1. train_data 기준으로 normalize feature 계산 (Dyad 기반)
 mean_vals, std_vals = compute_mean_std(train_data)
 min_vals, max_vals = compute_min_max(train_data)
-train_data_norm = normalize_dict(train_data, mean_vals, std_vals, max_vals, min_vals)
-test_data_norm = normalize_dict(test_data, mean_vals, std_vals, max_vals, min_vals)
-# train_data_norm = minmax_normalize_dict(train_data, min_vals, max_vals)
-# test_data_norm = minmax_normalize_dict(test_data, min_vals, max_vals)
+#train_data_norm = normalize_dict(train_data, mean_vals, std_vals, max_vals, min_vals)
+#test_data_norm = normalize_dict(test_data, mean_vals, std_vals, max_vals, min_vals)
+train_data_norm = minmax_normalize_dict(train_data, min_vals, max_vals)
+test_data_norm = minmax_normalize_dict(test_data, min_vals, max_vals)
 
 # 2. train/test normalize (quantile min-max 방식)
 # low_vals, high_vals = compute_min_max_quantile(train_data)
@@ -131,36 +136,36 @@ for cid , arr in test_data_norm.items():
 """
 
 np.save(
-    f"train_brand{brand[brand_num]}.npy",
+    "train.npy",
     train_snippets,
     allow_pickle=True,
 )
 
 np.save(
-    f"train_labels_brand{brand[brand_num]}.npy",
+    "train_labels.npy",
     train_labels,
     allow_pickle=True,
 )
 
 np.save(
-    f"test_brand{brand[brand_num]}.npy",
+    f"test.npy",
     test_data_norm,
     allow_pickle=True,
 )
 np.save(
-    f"test_labels_brand{brand[brand_num]}.npy",
+    "test_labels.npy",
     test_labels,
     allow_pickle=True,
 )
 
 np.save(
-    f"minmax_stats_brand{brand[brand_num]}.npy",
+    "minmax_stats.npy",
     {"min": min_vals, "max": max_vals},
     allow_pickle=True,
 )
 
 np.save(
-    f"train_brand{brand[brand_num]}_dict.npy",
+    "train_dict.npy",
     train_data_norm,
     allow_pickle=True,
 )
