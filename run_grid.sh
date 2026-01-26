@@ -5,26 +5,26 @@ BASE_CONFIG="./configs/tranad_base.json"   # 템플릿 config
 RESULTS_DIR="./results/gridsearch"        # 로그/결과 저장 폴더
 DATASET="BAT"                  # --dataset 인자
 MODEL="TranAD"                            # --model 인자
-BRAND="13"                         #brand num
-NUM_EPOCHS=5                             # 고정 epoch
+BRAND="ALL"                         #brand num
+NUM_EPOCHS=10                             # 고정 epoch
 
 # 튜닝할 값들
-BATCH_LIST=(32)
-dimff_LIST=(8)
+DECAY_LIST=(1e-5)
+EPOCH_LIST=(5 10 15)
 
 mkdir -p "$RESULTS_DIR"
 
 RESULT_CSV="$RESULTS_DIR/val_auroc_summary.csv"
-echo "model,brand,batch,dimff,val_auroc,log_path,config_path" >> "$RESULT_CSV"
+echo "model,brand,decay,epoch,val_auroc,log_path,config_path" >> "$RESULT_CSV"
 
-for w in "${BATCH_LIST[@]}"; do
-  for ld in "${dimff_LIST[@]}"; do
-    cfg_out="./configs/tranad_${BRAND}_batch${w}_dimff${ld}_epoch${NUM_EPOCHS}.json"
-    log_out="${RESULTS_DIR}/tranad_${BRAND}_batch${w}_dimff${ld}_epoch${NUM_EPOCHS}.log"
+for w in "${DECAY_LIST[@]}"; do
+  for ld in "${EPOCH_LIST[@]}"; do
+    cfg_out="./configs/tranad_${BRAND}_decay${w}_epoch${ld}_topk_responly.json"
+    log_out="${RESULTS_DIR}/tranad_${BRAND}_decay${w}_epoch${ld}_topk_responly.log"
 
     echo "==============================================="
-    echo "Running: batch=${w}, dimff=${ld}"
-    echo "Epochs: $NUM_EPOCHS"
+    echo "Running: decay=${w}, epoch=${ld}"
+    echo "Epochs: ${ld}"
     echo "Config: $cfg_out"
     echo "Log   : $log_out"
     echo "==============================================="
@@ -39,8 +39,8 @@ out_path  = "${cfg_out}"
 with open(base_path, "r") as f:
     cfg = json.load(f)
 
-cfg["model"]["dim_feedforward"] = ${ld}
-cfg["training"]["batch_size"] = ${w}
+cfg["training"]["optimizer"]["weight_decay"] = ${w}
+cfg["training"]["num_epochs"] = ${ld}
 
 with open(out_path, "w") as f:
     json.dump(cfg, f, indent=4)

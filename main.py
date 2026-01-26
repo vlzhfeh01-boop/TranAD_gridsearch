@@ -1,7 +1,7 @@
 import pandas as pd
 from tqdm import tqdm
 from torch.utils.data import Dataset, DataLoader, TensorDataset
-import time
+from time import time
 from pprint import pprint
 from src2.utils import *
 from src2.parser import *
@@ -54,7 +54,6 @@ def backprop(
             batch_size = cfg["training"]["batch_size"]
             loss_type = cfg["training"]["loss_type"]
             dataloader = DataLoader(data_x, shuffle=True, batch_size=batch_size,num_workers=4,pin_memory=True,persistent_workers=True)
-            count = 0
             for batch in tqdm(dataloader):
 
                 optimizer.zero_grad()
@@ -62,7 +61,9 @@ def backprop(
 
                 batch = convert_to_windows_mod(batch, cfg, model)
                 #batch = convert_to_windows_unfold(batch, cfg)
-                
+
+                batch = batch[:,:,:,1:] #exclude volt
+
                 B, T, L, F = (
                     batch.shape
                 )  # Batch size, Number of window, window length, Feature
@@ -78,7 +79,6 @@ def backprop(
                 tgt = src[-1, :, :].unsqueeze(0)
                 # forward per one snippet
                 out = model(src, tgt)  # return (x1,x2) or tensor
-                
 
                 #print("batch device:", batch.device)
                 #print("model device:", next(model.parameters()).device)
@@ -87,8 +87,7 @@ def backprop(
                 if isinstance(out, tuple):
                     x1, x2 = out
 
-                    assert x1.shape == tgt.shape and x2.shape == tgt.shape
-
+                    #assert x1.shape == tgt.shape and x2.shape == tgt.shape
                     # loss1 = mse(x1, tgt).mean()
                     # loss2 = mse(x2, tgt).mean()
                     loss1 = reconstruction_loss(x1, tgt, loss_type=loss_type).mean()
@@ -123,7 +122,7 @@ def backprop(
                 scores = []
                 result_data=[]
                 arr = torch.as_tensor(arr, dtype=torch.float32, device=device)
-                dataloader = DataLoader(arr, batch_size=batch_size, shuffle=False,num_workers=0,pin_memory=True)
+                dataloader = DataLoader(arr, batch_size=batch_size, shuffle=False,num_workers=0)
                 for batch in dataloader:
                     score,result = snippet_score(
                         model,
@@ -202,11 +201,15 @@ if __name__ == "__main__":
     print(type(testO))
     print(type(labels))
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    
+
+    dims = len(cfg["data"]["features"])
+
 
     model, optimizer, scheduler, epoch, accuracy_list = load_model(
         cfg["model"]["name"],
         device,
-        trainO.shape[-1],
+        dims,
         args,
         cfg=cfg,  # modified # labels.shape[1]  # labels.shape[1] = dimensions
     )  # epoch = -1 , model 없는 경우
@@ -217,7 +220,7 @@ if __name__ == "__main__":
         num_epochs = cfg["training"]["num_epochs"]
 
         s = trainD
-        start = time.time()
+        start = time()
         for e in tqdm(list(range(epoch + 1, epoch + num_epochs + 1))):
 
             lossT, lr = backprop(

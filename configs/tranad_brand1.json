@@ -5,7 +5,8 @@
     },
     "data": {
         "output_folder": "processed/",
-        "data_folder": "data/"
+        "data_folder": "data/",
+	"features" : ["volt","current","soc","max_volt","min_volt","max_temp","min_temp","timestamp"]
     },
     "model": {
         "name": "TranAD",
@@ -19,7 +20,7 @@
         "num_decoder_layers": 1
     },
     "training": {
-        "num_epochs": 1,
+        "num_epochs": 15,
         "batch_size": 32,
         "loss_type": "smoothl1",
         "optimizer": {

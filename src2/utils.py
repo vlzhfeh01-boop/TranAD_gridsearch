@@ -56,9 +56,16 @@ def snippet_score(
     model.eval()
     with torch.inference_mode():
         window = convert_to_windows_mod(snippet, cfg, model)
-        B, N_win, L, F = window.shape
+
+
+
+        window = window[:,:,:,1:] # exclude volt
+
+
+
+        B, T, L, F = window.shape
         # src = window.permute(2, 0, 1, 3).contiguous.view(L,-1,F)
-        win = window.reshape(B * N_win, L, F)
+        win = window.reshape(B * T, L, F)
 
         src = win.permute(1, 0, 2).contiguous()
         # tgt = src[-1, :, :].unsqueeze(0)
@@ -85,21 +92,30 @@ def snippet_score(
             x2_last = x2  # (1,B,F)
 
         # (1,B,F) -> (B,) 윈도우별 score
-        res = reconstruction_loss(x2_last, tgt, loss_type=loss_type)  # (1,B,F)
+        feature_names = cfg["data"]["features"]
+        resp_names = ["max_temp","min_volt","max_volt"]
+        resp_idx = torch.tensor([feature_names.index(n) for n in resp_names],device=device)
+
+
+        res = reconstruction_loss(x2_last, tgt, loss_type=loss_type)  # (1,B*T,F)
         err_f = res.squeeze(0)
-        top3 = torch.topk(err_f, 3, dim=1).values
-        score_w = top3.mean(dim=1)  # (B,)
+        score_resp = err_f.index_select(dim=-1,index=resp_idx).mean(dim=-1)
+
+        assert score_resp.numel() == B*T
+        
+        #top3 = torch.topk(err_f, 3, dim=1).values
+        #score_w = top3.mean(dim=1)  # (B,)
         # was : mean all features. now : top3 feature-mean
-        score_w = score_w.view(B, N_win)
+        score_w = score_resp.view(B, T)
 
         if reduce == "mean":
-            return score_w.mean().item()
+            return score_w.mean(dim=1),x2_last.squeeze(0).reshape(B,T,F)
         elif reduce == "topk":
-            k = max(1, int(N_win * k_ratio))
+            k = max(1, int(T * k_ratio))
             topk_vals = torch.topk(score_w, k, dim=1).values.mean(dim=1)
-            return topk_vals, x2_last.squeeze(0).reshape(B,N_win,F)
+            return topk_vals, x2_last.squeeze(0).reshape(B,T,F)
         elif reduce == "percentile":
-            return torch.quantile(score_w, p / 100).item()
+            return torch.quantile(score_w, p / 100,dim=1),x2_last.squeeze(0).reshape(B,T,F)
         else:  # max
             return score_w.max().item()
 

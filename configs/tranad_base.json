@@ -5,7 +5,8 @@
     },
     "data" : {
         "output_folder" : "processed/",
-        "data_folder" : "data/"
+        "data_folder" : "data/",
+	"features" : ["volt","current","soc","max_volt","min_volt","max_temp","min_temp"]
     },
     "model" : {
         "name" : "TranAD",
@@ -14,7 +15,7 @@
         "d_model_factor" : 1,
         "nhead_factor": 1,
         "dim_feedforward": 8,
-        "dropout" : 0.1,
+        "dropout" : 0,
         "num_encoder_layers": 1,
         "num_decoder_layers": 1
     },

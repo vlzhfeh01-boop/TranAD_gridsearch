@@ -5,7 +5,8 @@
     },
     "data": {
         "output_folder": "processed/",
-        "data_folder": "data/"
+        "data_folder": "data/",
+	"features" : ["volt","current","soc","max_volt","min_volt","max_temp","min_temp","timestamp"]
     },
     "model": {
         "name": "TranAD",
